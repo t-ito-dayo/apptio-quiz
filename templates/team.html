@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="team-wrap">
+  <h2 class="page-title">👥 チームの進捗</h2>
+
+  <div class="team-grid">
+    {% for u in team %}
+    <div class="team-card {{ 'me' if u.name == session.user_name }}">
+      <div class="team-top">
+        {% if u.avatar %}
+        <img src="/static/avatars/{{ u.avatar }}" class="team-avatar-img">
+        {% else %}
+        <div class="team-avatar">{{ u.name[0] }}</div>
+        {% endif %}
+        <div class="team-info">
+          <div class="team-name">{{ u.name }}{% if u.name == session.user_name %} <span class="me-tag">あなた</span>{% endif %}</div>
+          <div class="team-title">Lv.{{ u.level }} {{ u.title }}</div>
+        </div>
+        <div class="team-xp">{{ u.xp }} XP</div>
+      </div>
+      <div class="team-stats">
+        <div class="stat">
+          <div class="stat-val">{{ u.correct }}</div>
+          <div class="stat-label">正解</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">{{ u.total }}</div>
+          <div class="stat-label">回答数</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">{{ u.badges }}</div>
+          <div class="stat-label">バッジ</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">{{ ((u.correct / u.total * 100)|int if u.total > 0 else 0) }}%</div>
+          <div class="stat-label">正解率</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

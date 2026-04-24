@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="select-wrap">
+  <h2 class="page-title">コースを選ぶ</h2>
+
+  <div class="select-section">
+    <div class="section-label">カテゴリ別</div>
+    <div class="course-grid">
+      <a href="/review" class="course-card review-card">
+        <div class="course-icon">🔄</div>
+        <div class="course-name">復習</div>
+        <div class="course-count">不正解の問題</div>
+      </a>
+      <a href="/quiz?category=all" class="course-card all">
+        <div class="course-icon">⚡</div>
+        <div class="course-name">すべて</div>
+        <div class="course-count">{{ total }}問</div>
+      </a>
+      {% for cat, count in categories %}
+      <a href="/quiz?category={{ cat }}" class="course-card">
+        <div class="course-icon">{{ cat_icons.get(cat, '📚') }}</div>
+        <div class="course-name">{{ cat }}</div>
+        <div class="course-count">{{ count }}問</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

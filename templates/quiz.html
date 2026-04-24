@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="quiz-wrap">
+  <div class="quiz-meta">
+    <span class="quiz-category">{{ question.category }}</span>
+    <span class="quiz-progress">{{ answered + 1 }} / {{ total }}</span>
+  </div>
+
+  <div class="quiz-card">
+    <p class="quiz-question">{{ question.question }}</p>
+
+    <form method="post" action="/answer" id="quiz-form">
+      <div class="choices">
+        {% for choice in question.choices %}
+        <label class="choice-label" for="choice{{ loop.index0 }}">
+          <input type="radio" name="choice" id="choice{{ loop.index0 }}" value="{{ loop.index0 }}" required>
+          <span class="choice-text">{{ choice }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn-primary btn-full">回答する</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

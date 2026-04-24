@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="result-wrap">
+  <div class="result-card {{ 'correct' if is_correct else 'wrong' }}">
+    <div class="result-icon">{{ '⭕' if is_correct else '❌' }}</div>
+    <div class="result-label">{{ '正解！' if is_correct else '不正解' }}</div>
+    {% if xp_earned > 0 %}
+    <div class="xp-earned">+{{ xp_earned }} XP</div>
+    {% endif %}
+  </div>
+
+  {% if new_badges %}
+  <div class="new-badges">
+    <div class="badge-announce">🎉 バッジ獲得！</div>
+    {% for key in new_badges %}
+    <div class="badge-new">
+      {{ BADGES[key].icon }} {{ BADGES[key].label }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="explanation-card">
+    <div class="explanation-title">解説</div>
+    <div class="explanation-text">
+      {% for para in question.explanation.split('\n\n') %}
+      <p>{{ para }}</p>
+      {% endfor %}
+    </div>
+    <div class="answer-summary">
+      {% for choice in question.choices %}
+      <div class="answer-row {{ 'correct-ans' if loop.index0 == question.answer else ('wrong-ans' if loop.index0 == selected else '') }}">
+        {% if loop.index0 == question.answer %}✅{% elif loop.index0 == selected %}❌{% else %}　{% endif %}
+        {{ choice }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="result-actions">
+    {% if from_review is defined and from_review %}
+    <a href="/review" class="btn-primary">復習に戻る</a>
+    {% else %}
+    <a href="/quiz" class="btn-primary">次の問題へ</a>
+    <a href="/home" class="btn-secondary">ホームへ</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

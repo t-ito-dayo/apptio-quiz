@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <h1 class="login-title">⚡ Apptio Quiz</h1>
+    <p class="login-sub">Apptio / TBM PMケイパビリティ養成</p>
+
+    {% if error %}
+    <div class="login-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login">
+      <div class="section-label">メンバーを選択</div>
+      <div class="user-grid">
+        {% for u in users %}
+        <button type="button" class="user-btn" onclick="selectUser(this, '{{ u.name }}')">
+          {{ u.name }}
+        </button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="name" id="selected-name">
+
+      <div class="section-label" style="margin-top:1.2rem;">パスワード</div>
+      <input type="password" name="password" class="password-input" placeholder="パスワードを入力" autocomplete="current-password">
+
+      <button type="submit" class="login-btn" id="login-submit" disabled>ログイン</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function selectUser(btn, name) {
+  document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('selected-name').value = name;
+  updateSubmit();
+}
+document.querySelector('.password-input').addEventListener('input', updateSubmit);
+function updateSubmit() {
+  const name = document.getElementById('selected-name').value;
+  const pw = document.querySelector('.password-input').value;
+  document.getElementById('login-submit').disabled = !(name && pw);
+}
+</script>
+{% endblock %}

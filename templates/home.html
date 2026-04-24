@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="home-wrap">
+
+  <!-- プロフィールカード -->
+  <div class="profile-card">
+    <div class="profile-top">
+      <label class="avatar-wrap" title="タップして画像を変更">
+        {% if user.avatar %}
+        <img src="/static/avatars/{{ user.avatar }}" class="avatar-img">
+        {% else %}
+        <div class="avatar">{{ session.user_name[0] }}</div>
+        {% endif %}
+        <form method="post" action="/avatar/upload" enctype="multipart/form-data" id="avatarForm">
+          <input type="file" name="avatar" accept="image/*" style="display:none" id="avatarInput" onchange="document.getElementById('avatarForm').submit()">
+        </form>
+        <div class="avatar-edit">📷</div>
+      </label>
+      <script>
+        document.querySelector('.avatar-wrap').addEventListener('click', function(){
+          document.getElementById('avatarInput').click();
+        });
+      </script>
+      <div class="profile-info">
+        <div class="profile-name">{{ session.user_name }}</div>
+        <div class="profile-title">Lv.{{ level }} {{ title }}</div>
+      </div>
+      <div class="xp-badge">{{ user.xp }} XP</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress }}%"></div>
+      </div>
+      {% if next_xp %}
+      <div class="progress-label">次のレベルまで {{ next_xp - user.xp }} XP</div>
+      {% else %}
+      <div class="progress-label">🎉 最高レベル到達！</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- アクションボタン -->
+  <div class="action-grid">
+    <a href="/quiz/select" class="action-card primary">
+      <div class="action-icon">📝</div>
+      <div class="action-label">クイズ</div>
+    </a>
+    <a href="/team" class="action-card">
+      <div class="action-icon">👥</div>
+      <div class="action-label">チーム</div>
+    </a>
+    <a href="/chat" class="action-card">
+      <div class="action-icon">💬</div>
+      <div class="action-label">AI に質問</div>
+    </a>
+  </div>
+
+  <!-- チーム進捗 -->
+  <div class="team-progress-section">
+    <div class="section-title">👥 チームの進捗</div>
+    {% for u in team %}
+    <div class="team-progress-row {{ 'me' if u.name == my_name }}">
+      <div class="tp-left">
+        {% if u.avatar %}
+        <img src="/static/avatars/{{ u.avatar }}" class="tp-avatar-img">
+        {% else %}
+        <div class="tp-avatar">{{ u.name[0] }}</div>
+        {% endif %}
+        <div class="tp-info">
+          <div class="tp-name">{{ u.name }}{% if u.name == my_name %} <span class="me-tag">あなた</span>{% endif %}</div>
+          <div class="tp-level-row">
+            <span class="tp-lv-badge">Lv.{{ u.level }}</span>
+            <span class="tp-title">{{ u.title }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="tp-right">
+        <div class="tp-bar-wrap">
+          <div class="tp-bar">
+            <div class="tp-fill" style="width: {{ u.progress }}%"></div>
+          </div>
+          <div class="tp-label">{{ u.answered }}/{{ total_q }}問</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- バッジ -->
+  <div class="badge-section">
+    <div class="section-title">獲得バッジ</div>
+    <div class="badge-grid">
+      {% for key, info in BADGES.items() %}
+      <div class="badge-item {{ 'earned' if key in badges else 'locked' }}">
+        <div class="badge-icon">{{ info.icon if key in badges else '🔒' }}</div>
+        <div class="badge-name">{{ info.label }}</div>
+        <div class="badge-desc">{{ info.desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

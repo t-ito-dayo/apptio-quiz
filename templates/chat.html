@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="chat-wrap">
+  <h2 class="page-title">💬 AI に質問する</h2>
+  <p class="chat-sub">Apptio / TBM について何でも聞いてください</p>
+
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg assistant">
+      <div class="msg-bubble">こんにちは！Apptio・TBMについて何でも聞いてください。</div>
+    </div>
+  </div>
+
+  <div class="chat-input-wrap">
+    <input type="text" id="chatInput" class="chat-input" placeholder="質問を入力...">
+    <button onclick="sendMessage()" class="btn-primary chat-send">送信</button>
+  </div>
+</div>
+
+<script>
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const messages = document.getElementById('chatMessages');
+
+  // ユーザーメッセージ表示
+  messages.innerHTML += `<div class="chat-msg user"><div class="msg-bubble">${msg}</div></div>`;
+  input.value = '';
+  messages.scrollTop = messages.scrollHeight;
+
+  // ローディング
+  messages.innerHTML += `<div class="chat-msg assistant loading" id="loading"><div class="msg-bubble">...</div></div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch('/chat/api', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    document.getElementById('loading').remove();
+    messages.innerHTML += `<div class="chat-msg assistant"><div class="msg-bubble">${data.reply.replace(/\n/g, '<br>')}</div></div>`;
+  } catch(e) {
+    document.getElementById('loading').remove();
+    messages.innerHTML += `<div class="chat-msg assistant"><div class="msg-bubble">エラーが発生しました。もう一度お試しください。</div></div>`;
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+{% endblock %}

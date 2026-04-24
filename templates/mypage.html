@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mypage-wrap">
+
+  <!-- プロフィールカード -->
+  <div class="my-profile-card">
+    <div class="my-profile-top">
+      <label class="avatar-wrap" title="タップして画像を変更">
+        {% if user.avatar %}
+        <img src="/static/avatars/{{ user.avatar }}" class="avatar-img-lg">
+        {% else %}
+        <div class="avatar-lg">{{ session.user_name[0] }}</div>
+        {% endif %}
+        <form method="post" action="/avatar/upload" enctype="multipart/form-data" id="avatarForm">
+          <input type="file" name="avatar" accept="image/*" style="display:none" id="avatarInput" onchange="document.getElementById('avatarForm').submit()">
+        </form>
+        <div class="avatar-edit">📷</div>
+      </label>
+      <script>
+        document.querySelector('.avatar-wrap').addEventListener('click', function(){
+          document.getElementById('avatarInput').click();
+        });
+      </script>
+      <div class="my-profile-info">
+        <div class="my-name">{{ session.user_name }}</div>
+        <div class="my-level-row">
+          <span class="lv-badge-lg">Lv.{{ level }}</span>
+          <span class="my-title">{{ title }}</span>
+        </div>
+        <div class="my-xp">{{ user.xp }} XP</div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress }}%"></div>
+      </div>
+      {% if next_xp %}
+      <div class="progress-label">次のレベルまで {{ next_xp - user.xp }} XP</div>
+      {% else %}
+      <div class="progress-label">🎉 最高レベル到達！</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 統計 -->
+  <div class="my-stats-card">
+    <div class="section-title">📊 成績</div>
+    <div class="my-stats-grid">
+      <div class="my-stat">
+        <div class="my-stat-val">{{ total_correct }}</div>
+        <div class="my-stat-label">正解数</div>
+      </div>
+      <div class="my-stat">
+        <div class="my-stat-val">{{ total_answered }}</div>
+        <div class="my-stat-label">回答数</div>
+      </div>
+      <div class="my-stat">
+        <div class="my-stat-val">{{ ((total_correct / total_answered * 100)|int if total_answered > 0 else 0) }}%</div>
+        <div class="my-stat-label">正解率</div>
+      </div>
+      <div class="my-stat">
+        <div class="my-stat-val">{{ badge_keys|length }}</div>
+        <div class="my-stat-label">バッジ数</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カテゴリ別進捗 -->
+  <div class="my-cat-card">
+    <div class="section-title">📚 カテゴリ別進捗</div>
+    {% for cat, stats in cat_stats.items() %}
+    <div class="cat-row">
+      <div class="cat-label">{{ cat_icons.get(cat, '📖') }} {{ cat }}</div>
+      <div class="cat-bar-wrap">
+        <div class="tp-bar">
+          <div class="tp-fill" style="width: {{ (stats.answered / stats.total * 100)|int }}%"></div>
+        </div>
+        <div class="tp-label">{{ stats.answered }}/{{ stats.total }}</div>
+      </div>
+      {% if stats.answered > 0 %}
+      <div class="cat-acc">正解率 {{ (stats.correct / stats.answered * 100)|int }}%</div>
+      {% else %}
+      <div class="cat-acc">-</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- バッジ -->
+  <div class="badge-section">
+    <div class="section-title">🏅 獲得バッジ</div>
+    <div class="badge-grid">
+      {% for key, info in BADGES.items() %}
+      <div class="badge-item {{ 'earned' if key in badge_keys else 'locked' }}">
+        <div class="badge-icon">{{ info.icon if key in badge_keys else '🔒' }}</div>
+        <div class="badge-name">{{ info.label }}</div>
+        <div class="badge-desc">{{ info.desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
