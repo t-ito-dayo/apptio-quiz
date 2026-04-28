@@ -181,7 +181,7 @@ a { text-decoration: none; color: inherit; }
 .team-info { flex: 1; }
 .team-name { font-size: 16px; font-weight: 700; }
 .team-title { font-size: 13px; color: #718096; }
-.me-tag { background: #276749; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
+.me-tag { background: #dd6b20; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
 .team-xp { font-size: 15px; font-weight: 700; color: #2b6cb0; white-space: nowrap; }
 .team-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .stat { text-align: center; background: #f7fafc; border-radius: 10px; padding: 10px 4px; }
