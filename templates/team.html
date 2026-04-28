@@ -36,6 +36,15 @@
           <div class="stat-label">正解率</div>
         </div>
       </div>
+      <div class="team-progress-wrap">
+        <div class="team-progress-label">
+          <span>Lv.{{ u.level }} → Lv.{{ u.level + 1 if u.level < 6 else 6 }}</span>
+          <span>{{ u.progress }}%</span>
+        </div>
+        <div class="team-progress-bar">
+          <div class="team-progress-fill" style="width: {{ u.progress }}%"></div>
+        </div>
+      </div>
     </div>
     {% endfor %}
   </div>

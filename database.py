@@ -204,27 +204,48 @@ def delete_question(q_id):
     conn.close()
 
 
-LEVELS = [
-    (1,    0,   'Apptio見習い'),
-    (2,  100,   'TBM入門者'),
-    (3,  250,   'コスト分析者'),
-    (4,  500,   'ITタワー設計者'),
-    (5,  900,   'TBMエキスパート'),
-    (6, 1400,   'ApptioマスターPM'),
+XP_PER_CORRECT = 15
+
+LEVEL_NAMES = [
+    (1, 'Apptio見習い'),
+    (2, 'TBM入門者'),
+    (3, 'コスト分析者'),
+    (4, 'ITタワー設計者'),
+    (5, 'TBMエキスパート'),
+    (6, 'ApptioマスターPM'),
 ]
 
-def get_level(xp):
-    level, title = 1, LEVELS[0][2]
-    for lv, threshold, name in LEVELS:
+# 後方互換のためLEVELSは残す（固定閾値は使わない）
+LEVELS = [(lv, 0, name) for lv, name in LEVEL_NAMES]
+
+
+def _thresholds(total_q):
+    xp_per_lv = max(total_q, 1) * XP_PER_CORRECT
+    return [(lv, xp_per_lv * i, name) for i, (lv, name) in enumerate(LEVEL_NAMES)]
+
+
+def get_level(xp, total_q):
+    level, title = 1, LEVEL_NAMES[0][1]
+    for lv, threshold, name in _thresholds(total_q):
         if xp >= threshold:
             level, title = lv, name
     return level, title
 
-def xp_for_next_level(xp):
-    for lv, threshold, name in LEVELS:
+
+def xp_for_next_level(xp, total_q):
+    for lv, threshold, name in _thresholds(total_q):
         if xp < threshold:
             return threshold
     return None
+
+
+def get_progress(xp, total_q):
+    xp_per_lv = max(total_q, 1) * XP_PER_CORRECT
+    next_xp = xp_for_next_level(xp, total_q)
+    if next_xp is None:
+        return 100
+    prev_xp = next_xp - xp_per_lv
+    return min(int((xp - prev_xp) / xp_per_lv * 100), 100)
 
 
 BADGES = {

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from database import (init_db, get_db, get_level, xp_for_next_level, check_badges,
-                      BADGES, LEVELS, get_questions, get_question_by_id,
+from database import (init_db, get_db, get_level, xp_for_next_level, get_progress,
+                      check_badges, BADGES, LEVELS, get_questions, get_question_by_id,
                       get_projects, update_question, delete_question)
 import random
 import os
@@ -82,26 +82,20 @@ def home():
     if 'user_id' not in session:
         return redirect(url_for('index'))
     conn = get_db()
+    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     user = conn.execute('SELECT * FROM users WHERE id=?', (session['user_id'],)).fetchone()
-    level, title = get_level(user['xp'])
-    next_xp = xp_for_next_level(user['xp'])
+    level, title = get_level(user['xp'], total_q)
+    next_xp = xp_for_next_level(user['xp'], total_q)
+    progress = get_progress(user['xp'], total_q)
     badges = conn.execute(
         'SELECT badge_key FROM badges WHERE user_id=?', (session['user_id'],)
     ).fetchall()
     badge_keys = [b['badge_key'] for b in badges]
 
-    progress = 0
-    if next_xp:
-        prev_xp = next((LEVELS[i-1][1] for i, (lv, th, _) in enumerate(LEVELS) if th == next_xp and i > 0), 0)
-        progress = int((user['xp'] - prev_xp) / (next_xp - prev_xp) * 100)
-    else:
-        progress = 100
-
     all_users = conn.execute('SELECT id, name, xp, avatar FROM users ORDER BY name').fetchall()
-    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     team = []
     for u in all_users:
-        lv, ttl = get_level(u['xp'])
+        lv, ttl = get_level(u['xp'], total_q)
         answered_count = conn.execute(
             'SELECT COUNT(DISTINCT question_id) FROM answers WHERE user_id=?', (u['id'],)
         ).fetchone()[0]
@@ -197,8 +191,9 @@ def answer():
 
     new_badges = check_badges(session['user_id'], conn)
 
+    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     user = conn.execute('SELECT xp FROM users WHERE id=?', (session['user_id'],)).fetchone()
-    level, level_title = get_level(user['xp'])
+    level, level_title = get_level(user['xp'], total_q)
     conn.execute('UPDATE users SET level=? WHERE id=?', (level, session['user_id']))
     conn.commit()
     conn.close()
@@ -251,8 +246,9 @@ def review_answer():
                      (XP_CORRECT, session['user_id']))
         conn.commit()
         check_badges(session['user_id'], conn)
+        total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
         user = conn.execute('SELECT xp FROM users WHERE id=?', (session['user_id'],)).fetchone()
-        level, _ = get_level(user['xp'])
+        level, _ = get_level(user['xp'], total_q)
         conn.execute('UPDATE users SET level=? WHERE id=?', (level, session['user_id']))
         conn.commit()
     conn.close()
@@ -273,10 +269,11 @@ def team():
     if 'user_id' not in session:
         return redirect(url_for('index'))
     conn = get_db()
+    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     users = conn.execute('SELECT id, name, xp, level, avatar FROM users ORDER BY name').fetchall()
     team_data = []
     for u in users:
-        level, title = get_level(u['xp'])
+        level, title = get_level(u['xp'], total_q)
         correct = conn.execute(
             'SELECT COUNT(*) FROM answers WHERE user_id=? AND is_correct=1', (u['id'],)
         ).fetchone()[0]
@@ -295,9 +292,10 @@ def team():
             'total': total,
             'badges': badges,
             'avatar': u['avatar'],
+            'progress': get_progress(u['xp'], total_q),
         })
     conn.close()
-    return render_template('team.html', team=team_data)
+    return render_template('team.html', team=team_data, total_q=total_q)
 
 
 @app.route('/completed')
@@ -310,16 +308,11 @@ def mypage():
     if 'user_id' not in session:
         return redirect(url_for('index'))
     conn = get_db()
+    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     user = conn.execute('SELECT * FROM users WHERE id=?', (session['user_id'],)).fetchone()
-    level, title = get_level(user['xp'])
-    next_xp = xp_for_next_level(user['xp'])
-
-    progress = 0
-    if next_xp:
-        prev_xp = next((LEVELS[i-1][1] for i, (lv, th, _) in enumerate(LEVELS) if th == next_xp and i > 0), 0)
-        progress = int((user['xp'] - prev_xp) / (next_xp - prev_xp) * 100)
-    else:
-        progress = 100
+    level, title = get_level(user['xp'], total_q)
+    next_xp = xp_for_next_level(user['xp'], total_q)
+    progress = get_progress(user['xp'], total_q)
 
     badges = conn.execute('SELECT badge_key FROM badges WHERE user_id=?', (session['user_id'],)).fetchall()
     badge_keys = [b['badge_key'] for b in badges]

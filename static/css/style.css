@@ -193,6 +193,10 @@ a { text-decoration: none; color: inherit; }
 .stat { text-align: center; background: #f7fafc; border-radius: 10px; padding: 10px 4px; }
 .stat-val { font-size: 18px; font-weight: 800; color: #1a365d; }
 .stat-label { font-size: 11px; color: #718096; margin-top: 2px; }
+.team-progress-wrap { margin-top: 12px; }
+.team-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: #718096; margin-bottom: 4px; }
+.team-progress-bar { background: #e2e8f0; border-radius: 99px; height: 8px; overflow: hidden; }
+.team-progress-fill { height: 100%; background: linear-gradient(90deg, #2b6cb0, #63b3ed); border-radius: 99px; transition: width 0.4s; }
 
 /* ===== AIチャット ===== */
 .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 120px); }
