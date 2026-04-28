@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-wrap">
+  <h2 class="page-title">🔧 問題管理</h2>
+
+  <form method="get" action="/admin" class="admin-search">
+    <input type="text" name="q" value="{{ keyword }}" placeholder="IDまたは問題文で検索..." class="admin-search-input">
+    <button type="submit" class="btn-primary">検索</button>
+    {% if keyword %}<a href="/admin" class="btn-ghost">クリア</a>{% endif %}
+  </form>
+
+  <div class="admin-count">{{ questions|length }}件</div>
+
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>PJ</th>
+          <th>カテゴリ</th>
+          <th>問題文</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in questions %}
+        <tr>
+          <td class="admin-id">{{ q.id }}</td>
+          <td class="admin-pj">{{ q.pj_name or '—' }}</td>
+          <td class="admin-cat">{{ q.category }}</td>
+          <td class="admin-q">{{ q.question[:60] }}{% if q.question|length > 60 %}…{% endif %}</td>
+          <td class="admin-actions">
+            <a href="/admin/edit/{{ q.id }}" class="btn-edit">編集</a>
+            <form method="post" action="/admin/delete/{{ q.id }}" style="display:inline" onsubmit="return confirm('削除しますか？')">
+              <button type="submit" class="btn-delete">削除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

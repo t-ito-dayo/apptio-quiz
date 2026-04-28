@@ -1,6 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import os
+import json
 
 
 def get_db():
@@ -90,6 +91,40 @@ def init_db():
         )
     ''')
 
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS projects (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS questions (
+            id TEXT PRIMARY KEY,
+            pj_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+            category TEXT NOT NULL,
+            question TEXT NOT NULL,
+            choices JSONB NOT NULL,
+            answer INTEGER NOT NULL,
+            explanation TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 既存のquestions.pyから初回マイグレーション
+    count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+    if count == 0:
+        try:
+            from data.questions import QUESTIONS as FILE_QUESTIONS
+            for q in FILE_QUESTIONS:
+                conn.execute(
+                    'INSERT INTO questions (id, category, question, choices, answer, explanation) VALUES (?,?,?,?::jsonb,?,?) ON CONFLICT (id) DO NOTHING',
+                    (q['id'], q['category'], q['question'], json.dumps(q['choices'], ensure_ascii=False), q['answer'], q['explanation'])
+                )
+        except ImportError:
+            pass
+
     members = ['伊藤', '大熊', '涌井', '啓舟', 'まなてぃー', '江川', '木塚', '高橋', 'プロ']
     for name in members:
         conn.execute(
@@ -97,6 +132,74 @@ def init_db():
             (name,)
         )
 
+    conn.commit()
+    conn.close()
+
+
+def _row_to_question(row):
+    choices = row['choices']
+    if isinstance(choices, str):
+        choices = json.loads(choices)
+    return {
+        'id': row['id'],
+        'pj_id': row['pj_id'],
+        'category': row['category'],
+        'question': row['question'],
+        'choices': choices,
+        'answer': row['answer'],
+        'explanation': row['explanation'],
+    }
+
+
+def get_questions(pj_id=None, category=None):
+    conn = get_db()
+    conditions = []
+    params = []
+    if pj_id == 'none':
+        conditions.append('pj_id IS NULL')
+    elif pj_id:
+        conditions.append('pj_id = ?')
+        params.append(int(pj_id))
+    if category:
+        conditions.append('category = ?')
+        params.append(category)
+    query = 'SELECT * FROM questions'
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+    query += ' ORDER BY created_at, id'
+    rows = conn.execute(query, params or None).fetchall()
+    conn.close()
+    return [_row_to_question(r) for r in rows]
+
+
+def get_question_by_id(q_id):
+    conn = get_db()
+    row = conn.execute('SELECT * FROM questions WHERE id=?', (q_id,)).fetchone()
+    conn.close()
+    return _row_to_question(row) if row else None
+
+
+def get_projects():
+    conn = get_db()
+    rows = conn.execute('SELECT * FROM projects ORDER BY name').fetchall()
+    conn.close()
+    return [{'id': r['id'], 'name': r['name']} for r in rows]
+
+
+def update_question(q_id, category, question, choices, answer, explanation, pj_id=None):
+    conn = get_db()
+    conn.execute(
+        'UPDATE questions SET category=?, question=?, choices=?::jsonb, answer=?, explanation=?, pj_id=? WHERE id=?',
+        (category, question, json.dumps(choices, ensure_ascii=False), int(answer), pj_id or None, q_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_question(q_id):
+    conn = get_db()
+    conn.execute('DELETE FROM answers WHERE question_id=?', (q_id,))
+    conn.execute('DELETE FROM questions WHERE id=?', (q_id,))
     conn.commit()
     conn.close()
 
@@ -147,7 +250,7 @@ def check_badges(user_id, conn):
     level = user['level']
 
     def award(key):
-        result = conn.execute(
+        conn.execute(
             'INSERT INTO badges (user_id, badge_key) VALUES (?,?) ON CONFLICT (user_id, badge_key) DO NOTHING',
             (user_id, key)
         )

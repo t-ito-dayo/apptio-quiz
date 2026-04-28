@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from database import init_db, get_db, get_level, xp_for_next_level, check_badges, BADGES, LEVELS
-from data.questions import QUESTIONS
+from database import (init_db, get_db, get_level, xp_for_next_level, check_badges,
+                      BADGES, LEVELS, get_questions, get_question_by_id,
+                      get_projects, update_question, delete_question)
 import random
 import os
 from google import genai as google_genai
 import cloudinary
 import cloudinary.uploader
 
-# .envからAPIキー読み込み
 _env_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(_env_path):
     for line in open(_env_path):
@@ -97,10 +97,9 @@ def home():
     else:
         progress = 100
 
-    # チーム進捗
     all_users = conn.execute('SELECT id, name, xp, avatar FROM users ORDER BY name').fetchall()
+    total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     team = []
-    total_q = len(QUESTIONS)
     for u in all_users:
         lv, ttl = get_level(u['xp'])
         answered_count = conn.execute(
@@ -131,17 +130,31 @@ def quiz():
     if 'user_id' not in session:
         return redirect(url_for('index'))
 
-    category = request.args.get('category', session.get('quiz_category', 'all'))
-    session['quiz_category'] = category
+    category = request.args.get('category')
+    pj = request.args.get('pj')
+
+    if category is not None:
+        session['quiz_filter'] = {'type': 'category', 'value': category}
+    elif pj is not None:
+        session['quiz_filter'] = {'type': 'pj', 'value': pj}
+    elif 'quiz_filter' not in session:
+        session['quiz_filter'] = {'type': 'category', 'value': 'all'}
+
+    f = session['quiz_filter']
+    if f['type'] == 'pj':
+        pool = get_questions(pj_id=f['value'])
+    elif f['value'] == 'all':
+        pool = get_questions()
+    else:
+        pool = get_questions(category=f['value'])
 
     conn = get_db()
     answered = conn.execute(
         'SELECT question_id FROM answers WHERE user_id=?', (session['user_id'],)
     ).fetchall()
-    answered_ids = {r['question_id'] for r in answered}
     conn.close()
+    answered_ids = {r['question_id'] for r in answered}
 
-    pool = QUESTIONS if category == 'all' else [q for q in QUESTIONS if q['category'] == category]
     remaining = [q for q in pool if q['id'] not in answered_ids]
     if not remaining:
         return redirect(url_for('completed'))
@@ -149,7 +162,7 @@ def quiz():
     q = random.choice(remaining)
     session['current_question'] = q['id']
     return render_template('quiz.html', question=q, total=len(pool),
-                           answered=len([q for q in pool if q['id'] in answered_ids]))
+                           answered=len([x for x in pool if x['id'] in answered_ids]))
 
 
 @app.route('/answer', methods=['POST'])
@@ -159,7 +172,7 @@ def answer():
 
     q_id = session.get('current_question')
     choice = request.form.get('choice', type=int)
-    question = next((q for q in QUESTIONS if q['id'] == q_id), None)
+    question = get_question_by_id(q_id)
     if not question or choice is None:
         return redirect(url_for('quiz'))
 
@@ -211,7 +224,8 @@ def review():
     ).fetchall()
     conn.close()
     wrong_ids = {r['question_id'] for r in wrong}
-    wrong_questions = [q for q in QUESTIONS if q['id'] in wrong_ids]
+    all_q = get_questions()
+    wrong_questions = [q for q in all_q if q['id'] in wrong_ids]
     return render_template('review.html', questions=wrong_questions)
 
 
@@ -222,7 +236,7 @@ def review_answer():
 
     q_id = request.form.get('question_id')
     choice = request.form.get('choice', type=int)
-    question = next((q for q in QUESTIONS if q['id'] == q_id), None)
+    question = get_question_by_id(q_id)
     if not question or choice is None:
         return redirect(url_for('review'))
 
@@ -307,22 +321,21 @@ def mypage():
     else:
         progress = 100
 
-    # バッジ
     badges = conn.execute('SELECT badge_key FROM badges WHERE user_id=?', (session['user_id'],)).fetchall()
     badge_keys = [b['badge_key'] for b in badges]
 
-    # 全体stats
     total_answered = conn.execute('SELECT COUNT(*) FROM answers WHERE user_id=?', (session['user_id'],)).fetchone()[0]
     total_correct = conn.execute('SELECT COUNT(*) FROM answers WHERE user_id=? AND is_correct=1', (session['user_id'],)).fetchone()[0]
 
-    # カテゴリ別進捗
-    from collections import defaultdict
     answered_rows = conn.execute('SELECT question_id, is_correct FROM answers WHERE user_id=?', (session['user_id'],)).fetchall()
     conn.close()
 
     answered_map = {r['question_id']: r['is_correct'] for r in answered_rows}
+    all_q = get_questions()
+
+    from collections import defaultdict
     cat_stats = defaultdict(lambda: {'total': 0, 'answered': 0, 'correct': 0})
-    for q in QUESTIONS:
+    for q in all_q:
         cat = q['category']
         cat_stats[cat]['total'] += 1
         if q['id'] in answered_map:
@@ -341,7 +354,7 @@ def mypage():
         badge_keys=badge_keys, BADGES=BADGES,
         total_answered=total_answered, total_correct=total_correct,
         cat_stats=cat_stats, cat_icons=cat_icons,
-        total_q=len(QUESTIONS)
+        total_q=len(all_q)
     )
 
 
@@ -372,7 +385,8 @@ def quiz_select():
     if 'user_id' not in session:
         return redirect(url_for('index'))
     from collections import Counter
-    cat_counts = Counter(q['category'] for q in QUESTIONS)
+    all_q = get_questions()
+    cat_counts = Counter(q['category'] for q in all_q)
     categories = sorted(cat_counts.items())
     cat_icons = {
         'TBM基礎':   '📘',
@@ -381,10 +395,14 @@ def quiz_select():
         'Apptio実務': '🔧',
         'PMスキル':  '🎯',
     }
+    projects = get_projects()
+    pj_counts = Counter(q['pj_id'] for q in all_q if q['pj_id'])
     return render_template('select.html',
         categories=categories,
-        total=len(QUESTIONS),
-        cat_icons=cat_icons
+        total=len(all_q),
+        cat_icons=cat_icons,
+        projects=projects,
+        pj_counts=pj_counts,
     )
 
 
@@ -405,9 +423,10 @@ def chat_api():
     if not user_message:
         return jsonify({'error': 'empty'}), 400
 
+    questions = get_questions()
     knowledge = '\n'.join([
         f"Q: {q['question']}\nA: {q['choices'][q['answer']]}\n解説: {q['explanation']}"
-        for q in QUESTIONS
+        for q in questions
     ])
 
     system_prompt = f"""あなたはApptio・TBM（Technology Business Management）の専門家アシスタントです。
@@ -429,6 +448,74 @@ def chat_api():
         )
     )
     return jsonify({'reply': response.text})
+
+
+# ===== 管理画面 =====
+
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+        if session.get('user_name') != '伊藤':
+            return '権限がありません', 403
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/admin')
+@admin_required
+def admin():
+    keyword = request.args.get('q', '').strip()
+    conn = get_db()
+    if keyword:
+        rows = conn.execute(
+            "SELECT q.*, p.name as pj_name FROM questions q LEFT JOIN projects p ON q.pj_id = p.id WHERE q.id ILIKE ? OR q.question ILIKE ? ORDER BY q.created_at, q.id",
+            (f'%{keyword}%', f'%{keyword}%')
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT q.*, p.name as pj_name FROM questions q LEFT JOIN projects p ON q.pj_id = p.id ORDER BY q.created_at, q.id"
+        ).fetchall()
+    conn.close()
+    questions = [{'id': r['id'], 'category': r['category'], 'question': r['question'], 'pj_name': r['pj_name']} for r in rows]
+    return render_template('admin.html', questions=questions, keyword=keyword)
+
+
+@app.route('/admin/edit/<q_id>', methods=['GET', 'POST'])
+@admin_required
+def admin_edit(q_id):
+    projects = get_projects()
+    if request.method == 'POST':
+        choices = [
+            request.form.get('choice0', ''),
+            request.form.get('choice1', ''),
+            request.form.get('choice2', ''),
+            request.form.get('choice3', ''),
+        ]
+        update_question(
+            q_id=q_id,
+            category=request.form.get('category', ''),
+            question=request.form.get('question', ''),
+            choices=choices,
+            answer=request.form.get('answer', 0),
+            explanation=request.form.get('explanation', ''),
+            pj_id=request.form.get('pj_id') or None,
+        )
+        return redirect(url_for('admin'))
+
+    q = get_question_by_id(q_id)
+    if not q:
+        return '問題が見つかりません', 404
+    return render_template('admin_edit.html', q=q, projects=projects)
+
+
+@app.route('/admin/delete/<q_id>', methods=['POST'])
+@admin_required
+def admin_delete(q_id):
+    delete_question(q_id)
+    return redirect(url_for('admin'))
 
 
 if __name__ == '__main__':

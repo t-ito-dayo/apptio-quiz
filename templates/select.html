@@ -3,8 +3,12 @@
 <div class="select-wrap">
   <h2 class="page-title">コースを選ぶ</h2>
 
-  <div class="select-section">
-    <div class="section-label">カテゴリ別</div>
+  <div class="select-tabs">
+    <button class="select-tab active" onclick="showTab('category', this)">カテゴリ別</button>
+    <button class="select-tab" onclick="showTab('pj', this)">PJ別</button>
+  </div>
+
+  <div id="tab-category" class="select-section">
     <div class="course-grid">
       <a href="/review" class="course-card review-card">
         <div class="course-icon">🔄</div>
@@ -25,5 +29,32 @@
       {% endfor %}
     </div>
   </div>
+
+  <div id="tab-pj" class="select-section" style="display:none">
+    {% if projects %}
+    <div class="course-grid">
+      {% for pj in projects %}
+      <a href="/quiz?pj={{ pj.id }}" class="course-card">
+        <div class="course-icon">🏢</div>
+        <div class="course-name">{{ pj.name }}</div>
+        <div class="course-count">{{ pj_counts.get(pj.id, 0) }}問</div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>PJがまだ登録されていません</p>
+    </div>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+function showTab(name, btn) {
+  document.querySelectorAll('.select-section').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.select-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).style.display = '';
+  btn.classList.add('active');
+}
+</script>
 {% endblock %}

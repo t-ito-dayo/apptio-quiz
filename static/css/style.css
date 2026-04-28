@@ -208,6 +208,40 @@ a { text-decoration: none; color: inherit; }
 .chat-input:focus { border-color: #2b6cb0; }
 .chat-send { padding: 12px 20px; white-space: nowrap; }
 
+/* ===== セレクトタブ ===== */
+.select-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.select-tab { padding: 8px 20px; border: 2px solid #2b6cb0; border-radius: 99px; background: none; color: #2b6cb0; font-size: 14px; font-weight: 700; cursor: pointer; }
+.select-tab.active { background: #2b6cb0; color: #fff; }
+
+/* ===== 管理画面 ===== */
+.admin-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+.admin-search { display: flex; gap: 8px; margin-bottom: 12px; }
+.admin-search-input { flex: 1; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.admin-count { font-size: 13px; color: #718096; margin-bottom: 12px; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th { background: #f7fafc; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+.admin-id { font-family: monospace; color: #718096; white-space: nowrap; }
+.admin-pj { white-space: nowrap; color: #2b6cb0; font-size: 12px; }
+.admin-cat { white-space: nowrap; font-size: 12px; }
+.admin-actions { white-space: nowrap; }
+.btn-primary { background: #2b6cb0; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-ghost { background: none; border: 2px solid #cbd5e0; color: #4a5568; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-edit { background: #ebf8ff; color: #2b6cb0; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; margin-right: 4px; }
+.btn-delete { background: #fff5f5; color: #e53e3e; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.admin-id-label { font-family: monospace; color: #718096; margin-bottom: 20px; }
+.edit-form { display: flex; flex-direction: column; gap: 20px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 13px; font-weight: 700; color: #4a5568; }
+.form-input { border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; box-sizing: border-box; }
+.form-input-sm { border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 80px; }
+.form-select { border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.form-textarea { border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; box-sizing: border-box; resize: vertical; }
+.choice-row { display: flex; align-items: center; gap: 8px; }
+.choice-label { width: 20px; height: 20px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.form-actions { display: flex; gap: 12px; padding-top: 8px; }
+
 /* ===== 空状態 ===== */
 .empty-state { text-align: center; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .empty-icon { font-size: 60px; }
