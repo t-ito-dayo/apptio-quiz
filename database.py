@@ -205,47 +205,63 @@ def delete_question(q_id):
 
 
 XP_PER_CORRECT = 15
+XP_PER_LEVEL = 75   # 5問正解でレベルアップ
+MAX_LEVEL = 100
 
-LEVEL_NAMES = [
-    (1, 'Apptio見習い'),
-    (2, 'TBM入門者'),
-    (3, 'コスト分析者'),
-    (4, 'ITタワー設計者'),
-    (5, 'TBMエキスパート'),
-    (6, 'ApptioマスターPM'),
+# (最小Lv, 称号)
+LEVEL_TIERS = [
+    (1,   '研修生'),
+    (6,   '新入社員'),
+    (11,  'IT担当者'),
+    (16,  'ITコスト見習い'),
+    (21,  'Analyst'),
+    (26,  'Budget Analyst'),
+    (31,  'TBM見習い'),
+    (36,  'コストの番人'),
+    (41,  'Cost Hunter'),
+    (46,  'Optimizer'),
+    (51,  'TBM Ninja'),
+    (56,  'Data Architect'),
+    (61,  'ITタワー職人'),
+    (66,  'Cost Rocket'),
+    (71,  'Budget Jedi'),
+    (76,  'TBM Wizard'),
+    (81,  'Godhand'),
+    (86,  'Joker'),
+    (91,  'ApptioMaster'),
+    (96,  'Legend'),
+    (100, 'MANAYA'),
 ]
 
-# 後方互換のためLEVELSは残す（固定閾値は使わない）
-LEVELS = [(lv, 0, name) for lv, name in LEVEL_NAMES]
+# 後方互換
+LEVELS = [(min_lv, (min_lv - 1) * XP_PER_LEVEL, name) for min_lv, name in LEVEL_TIERS]
 
 
-def _thresholds(total_q):
-    xp_per_lv = max(total_q, 1) * XP_PER_CORRECT
-    return [(lv, xp_per_lv * i, name) for i, (lv, name) in enumerate(LEVEL_NAMES)]
+def _get_title(level):
+    title = LEVEL_TIERS[0][1]
+    for min_lv, name in LEVEL_TIERS:
+        if level >= min_lv:
+            title = name
+    return title
 
 
-def get_level(xp, total_q):
-    level, title = 1, LEVEL_NAMES[0][1]
-    for lv, threshold, name in _thresholds(total_q):
-        if xp >= threshold:
-            level, title = lv, name
-    return level, title
+def get_level(xp, total_q=None):
+    level = min(max(xp // XP_PER_LEVEL + 1, 1), MAX_LEVEL)
+    return level, _get_title(level)
 
 
-def xp_for_next_level(xp, total_q):
-    for lv, threshold, name in _thresholds(total_q):
-        if xp < threshold:
-            return threshold
-    return None
+def xp_for_next_level(xp, total_q=None):
+    level = min(xp // XP_PER_LEVEL + 1, MAX_LEVEL)
+    if level >= MAX_LEVEL:
+        return None
+    return level * XP_PER_LEVEL
 
 
-def get_progress(xp, total_q):
-    xp_per_lv = max(total_q, 1) * XP_PER_CORRECT
-    next_xp = xp_for_next_level(xp, total_q)
-    if next_xp is None:
+def get_progress(xp, total_q=None):
+    level = min(xp // XP_PER_LEVEL + 1, MAX_LEVEL)
+    if level >= MAX_LEVEL:
         return 100
-    prev_xp = next_xp - xp_per_lv
-    return min(int((xp - prev_xp) / xp_per_lv * 100), 100)
+    return min(int((xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100), 100)
 
 
 BADGES = {
