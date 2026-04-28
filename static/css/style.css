@@ -105,10 +105,10 @@ a { text-decoration: none; color: inherit; }
 .team-progress-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f4f8; }
 .team-progress-row:last-child { border-bottom: none; }
 .team-progress-row.me { background: #ebf8ff; margin: 0 -20px; padding: 10px 20px; border-radius: 10px; }
-.tp-left { display: flex; align-items: center; gap: 10px; width: 140px; flex-shrink: 0; }
+.tp-left { display: flex; align-items: center; gap: 10px; width: 170px; flex-shrink: 0; }
 .tp-avatar { width: 48px; height: 48px; background: #ebf8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #2b6cb0; flex-shrink: 0; }
 .tp-avatar-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.tp-name { font-size: 13px; font-weight: 700; }
+.tp-name { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .tp-level-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .tp-lv-badge { background: #2b6cb0; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 99px; }
 .tp-title { font-size: 11px; color: #718096; }
