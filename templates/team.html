@@ -8,7 +8,7 @@
     <div class="team-card {{ 'me' if u.name == session.user_name }}">
       <div class="team-top">
         {% if u.avatar %}
-        <img src="/static/avatars/{{ u.avatar }}" class="team-avatar-img">
+        <img src="{{ u.avatar }}" class="team-avatar-img">
         {% else %}
         <div class="team-avatar">{{ u.name[0] }}</div>
         {% endif %}

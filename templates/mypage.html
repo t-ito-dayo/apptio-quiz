@@ -7,7 +7,7 @@
     <div class="my-profile-top">
       <label class="avatar-wrap" title="タップして画像を変更">
         {% if user.avatar %}
-        <img src="/static/avatars/{{ user.avatar }}" class="avatar-img-lg">
+        <img src="{{ user.avatar }}" class="avatar-img-lg">
         {% else %}
         <div class="avatar-lg">{{ session.user_name[0] }}</div>
         {% endif %}

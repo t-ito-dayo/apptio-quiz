@@ -7,7 +7,7 @@
     <div class="profile-top">
       <label class="avatar-wrap" title="タップして画像を変更">
         {% if user.avatar %}
-        <img src="/static/avatars/{{ user.avatar }}" class="avatar-img">
+        <img src="{{ user.avatar }}" class="avatar-img">
         {% else %}
         <div class="avatar">{{ session.user_name[0] }}</div>
         {% endif %}
@@ -62,7 +62,7 @@
     <div class="team-progress-row {{ 'me' if u.name == my_name }}">
       <div class="tp-left">
         {% if u.avatar %}
-        <img src="/static/avatars/{{ u.avatar }}" class="tp-avatar-img">
+        <img src="{{ u.avatar }}" class="tp-avatar-img">
         {% else %}
         <div class="tp-avatar">{{ u.name[0] }}</div>
         {% endif %}

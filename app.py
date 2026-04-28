@@ -4,7 +4,8 @@ from data.questions import QUESTIONS
 import random
 import os
 from google import genai as google_genai
-from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 
 # .envからAPIキー読み込み
 _env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -16,8 +17,11 @@ if os.path.exists(_env_path):
 
 gemini_client = google_genai.Client(api_key=os.environ.get('GEMINI_API_KEY', ''))
 
-AVATAR_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'avatars')
-ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', ''),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', ''),
+)
 
 app = Flask(__name__)
 app.secret_key = 'apptio-quiz-secret-2024'
@@ -343,7 +347,24 @@ def mypage():
 
 @app.route('/avatar/upload', methods=['POST'])
 def avatar_upload():
-    return redirect(url_for('home'))
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    file = request.files.get('avatar')
+    if not file or file.filename == '':
+        return redirect(url_for('mypage'))
+    result = cloudinary.uploader.upload(
+        file,
+        folder='apptio-quiz/avatars',
+        public_id=f"user_{session['user_id']}",
+        overwrite=True,
+        resource_type='image',
+    )
+    avatar_url = result['secure_url']
+    conn = get_db()
+    conn.execute('UPDATE users SET avatar=? WHERE id=?', (avatar_url, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('mypage'))
 
 
 @app.route('/quiz/select')
