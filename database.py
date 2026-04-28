@@ -4,7 +4,7 @@ import os
 
 
 def get_db():
-    db_url = os.environ['DATABASE_URL']
+    db_url = os.environ.get('NEON_DATABASE_URL') or os.environ['DATABASE_URL']
     if db_url.startswith('postgres://'):
         db_url = db_url.replace('postgres://', 'postgresql://', 1)
     conn = psycopg2.connect(db_url, sslmode='require')
