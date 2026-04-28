@@ -11,7 +11,10 @@
 <header class="header">
   <div class="header-inner">
     <a href="/home" class="logo">⚡ Apptio Quiz</a>
-    <nav class="nav">
+    <button class="hamburger" id="hamburger" aria-label="メニュー">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav" id="nav">
       <a href="/home">ホーム</a>
       <a href="/quiz/select">クイズ</a>
       <a href="/team">チーム</a>
@@ -20,6 +23,12 @@
     </nav>
   </div>
 </header>
+<script>
+  document.getElementById('hamburger').addEventListener('click', function() {
+    document.getElementById('nav').classList.toggle('open');
+    this.classList.toggle('active');
+  });
+</script>
 {% endif %}
 <main class="main">
   {% block content %}{% endblock %}

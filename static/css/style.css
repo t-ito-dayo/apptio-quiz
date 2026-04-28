@@ -11,6 +11,11 @@ a { text-decoration: none; color: inherit; }
 .nav a { color: #cbd5e0; }
 .nav a:hover { color: #fff; }
 .logout { color: #fc8181 !important; }
+.hamburger { display: none; flex-direction: column; justify-content: center; gap: 5px; background: none; border: none; cursor: pointer; padding: 6px; }
+.hamburger span { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.25s; }
+.hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ===== メインコンテンツ ===== */
 .main { max-width: 700px; margin: 0 auto; padding: 20px 16px 80px; }
@@ -218,6 +223,23 @@ a { text-decoration: none; color: inherit; }
   .team-stats { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .stat-val { font-size: 16px; }
   .quiz-question { font-size: 16px; }
-  .nav { gap: 10px; font-size: 13px; }
   .course-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .hamburger { display: flex; }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 52px;
+    left: 0;
+    right: 0;
+    background: #1a365d;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 8px 0;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .nav.open { display: flex; }
+  .nav a { padding: 12px 24px; width: 100%; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 }
