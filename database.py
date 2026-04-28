@@ -1,20 +1,65 @@
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'quiz.db')
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    db_url = os.environ['DATABASE_URL']
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    conn = psycopg2.connect(db_url, sslmode='require')
+    return DBWrapper(conn)
+
+
+class RowProxy:
+    def __init__(self, row):
+        self._row = dict(row)
+        self._keys = list(row.keys())
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._row[self._keys[key]]
+        return self._row[key]
+
+    def __iter__(self):
+        return iter(self._row.values())
+
+
+class CursorWrapper:
+    def __init__(self, cur):
+        self._cur = cur
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        return RowProxy(row) if row else None
+
+    def fetchall(self):
+        return [RowProxy(row) for row in self._cur.fetchall()]
+
+
+class DBWrapper:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, query, params=None):
+        query = query.replace('?', '%s')
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(query, params or ())
+        return CursorWrapper(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
+
 
 def init_db():
     conn = get_db()
-    c = conn.cursor()
 
-    c.execute('''
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             xp INTEGER DEFAULT 0,
             level INTEGER DEFAULT 1,
@@ -23,9 +68,9 @@ def init_db():
         )
     ''')
 
-    c.execute('''
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS answers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             question_id TEXT NOT NULL,
             is_correct INTEGER NOT NULL,
@@ -34,9 +79,9 @@ def init_db():
         )
     ''')
 
-    c.execute('''
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS badges (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             badge_key TEXT NOT NULL,
             earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -45,15 +90,13 @@ def init_db():
         )
     ''')
 
-    conn.commit()
-
-    # メンバー初期登録
     members = ['伊藤', '大熊', '涌井', '啓舟', 'まなてぃー', '江川', '木塚', '高橋', 'プロ']
     for name in members:
-        try:
-            conn.execute('INSERT INTO users (name) VALUES (?)', (name,))
-        except:
-            pass
+        conn.execute(
+            'INSERT INTO users (name) VALUES (?) ON CONFLICT (name) DO NOTHING',
+            (name,)
+        )
+
     conn.commit()
     conn.close()
 
@@ -94,22 +137,21 @@ BADGES = {
 }
 
 def check_badges(user_id, conn):
-    c = conn.cursor()
     new_badges = []
 
-    correct = c.execute(
+    correct = conn.execute(
         'SELECT COUNT(*) FROM answers WHERE user_id=? AND is_correct=1', (user_id,)
     ).fetchone()[0]
 
-    user = c.execute('SELECT xp, level FROM users WHERE id=?', (user_id,)).fetchone()
+    user = conn.execute('SELECT xp, level FROM users WHERE id=?', (user_id,)).fetchone()
     level = user['level']
 
     def award(key):
-        try:
-            c.execute('INSERT INTO badges (user_id, badge_key) VALUES (?,?)', (user_id, key))
-            new_badges.append(key)
-        except sqlite3.IntegrityError:
-            pass
+        result = conn.execute(
+            'INSERT INTO badges (user_id, badge_key) VALUES (?,?) ON CONFLICT (user_id, badge_key) DO NOTHING',
+            (user_id, key)
+        )
+        new_badges.append(key)
 
     if correct >= 1:
         award('first_correct')
@@ -124,8 +166,7 @@ def check_badges(user_id, conn):
     if level >= 5:
         award('level_5')
 
-    # 連続正解チェック
-    recent = c.execute(
+    recent = conn.execute(
         'SELECT is_correct FROM answers WHERE user_id=? ORDER BY answered_at DESC LIMIT 10',
         (user_id,)
     ).fetchall()

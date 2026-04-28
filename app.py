@@ -343,20 +343,6 @@ def mypage():
 
 @app.route('/avatar/upload', methods=['POST'])
 def avatar_upload():
-    if 'user_id' not in session:
-        return redirect(url_for('index'))
-    file = request.files.get('avatar')
-    if not file or file.filename == '':
-        return redirect(url_for('home'))
-    ext = file.filename.rsplit('.', 1)[-1].lower()
-    if ext not in ALLOWED_EXT:
-        return redirect(url_for('home'))
-    filename = f"user_{session['user_id']}.{ext}"
-    file.save(os.path.join(AVATAR_FOLDER, filename))
-    conn = get_db()
-    conn.execute('UPDATE users SET avatar=? WHERE id=?', (filename, session['user_id']))
-    conn.commit()
-    conn.close()
     return redirect(url_for('home'))
 
 
