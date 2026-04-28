@@ -105,7 +105,7 @@ def home():
             'level': lv,
             'title': ttl,
             'answered': answered_count,
-            'progress': int(answered_count / total_q * 100) if total_q > 0 else 0,
+            'progress': get_progress(u['xp']),
             'avatar': u['avatar'],
         })
     conn.close()

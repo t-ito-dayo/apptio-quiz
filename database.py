@@ -205,7 +205,7 @@ def delete_question(q_id):
 
 
 XP_PER_CORRECT = 15
-XP_PER_LEVEL = 75   # 5問正解でレベルアップ
+XP_PER_LEVEL = 150  # 10問正解でレベルアップ
 MAX_LEVEL = 100
 
 # (最小Lv, 称号)
