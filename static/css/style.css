@@ -209,13 +209,17 @@ a { text-decoration: none; color: inherit; }
 .chat-send { padding: 12px 20px; white-space: nowrap; }
 
 /* ===== セレクトタブ ===== */
-.select-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-.select-tab { padding: 8px 20px; border: 2px solid #2b6cb0; border-radius: 99px; background: none; color: #2b6cb0; font-size: 14px; font-weight: 700; cursor: pointer; }
-.select-tab.active { background: #2b6cb0; color: #fff; }
+.select-tabs { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+.select-tab { flex: 1; padding: 10px; border: none; border-radius: 9px; background: none; color: #718096; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.select-tab.active { background: #fff; color: #1a365d; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.admin-link-wrap { text-align: center; margin-top: 32px; }
+.admin-link { color: #a0aec0; font-size: 13px; text-decoration: none; }
+.admin-link:hover { color: #718096; }
 
 /* ===== 管理画面 ===== */
 .admin-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
-.admin-search { display: flex; gap: 8px; margin-bottom: 12px; }
+.admin-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.admin-search { display: flex; gap: 8px; flex: 1; }
 .admin-search-input { flex: 1; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
 .admin-count { font-size: 13px; color: #718096; margin-bottom: 12px; }
 .admin-table-wrap { overflow-x: auto; }

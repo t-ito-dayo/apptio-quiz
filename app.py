@@ -458,8 +458,6 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('index'))
-        if session.get('user_name') != '伊藤':
-            return '権限がありません', 403
         return f(*args, **kwargs)
     return decorated
 
@@ -516,6 +514,37 @@ def admin_edit(q_id):
 def admin_delete(q_id):
     delete_question(q_id)
     return redirect(url_for('admin'))
+
+
+@app.route('/admin/add', methods=['GET', 'POST'])
+@admin_required
+def admin_add():
+    projects = get_projects()
+    if request.method == 'POST':
+        import time
+        q_id = f"q_{int(time.time() * 1000)}"
+        choices = [
+            request.form.get('choice0', ''),
+            request.form.get('choice1', ''),
+            request.form.get('choice2', ''),
+            request.form.get('choice3', ''),
+        ]
+        import json as _json
+        conn = get_db()
+        conn.execute(
+            'INSERT INTO questions (id, pj_id, category, question, choices, answer, explanation) VALUES (?,?,?,?,?::jsonb,?,?)',
+            (q_id,
+             request.form.get('pj_id') or None,
+             request.form.get('category', ''),
+             request.form.get('question', ''),
+             _json.dumps(choices, ensure_ascii=False),
+             int(request.form.get('answer', 0)),
+             request.form.get('explanation', ''))
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('admin'))
+    return render_template('admin_add.html', projects=projects)
 
 
 if __name__ == '__main__':

@@ -3,11 +3,14 @@
 <div class="admin-wrap">
   <h2 class="page-title">🔧 問題管理</h2>
 
-  <form method="get" action="/admin" class="admin-search">
-    <input type="text" name="q" value="{{ keyword }}" placeholder="IDまたは問題文で検索..." class="admin-search-input">
-    <button type="submit" class="btn-primary">検索</button>
-    {% if keyword %}<a href="/admin" class="btn-ghost">クリア</a>{% endif %}
-  </form>
+  <div class="admin-toolbar">
+    <form method="get" action="/admin" class="admin-search">
+      <input type="text" name="q" value="{{ keyword }}" placeholder="IDまたは問題文で検索..." class="admin-search-input">
+      <button type="submit" class="btn-primary">検索</button>
+      {% if keyword %}<a href="/admin" class="btn-ghost">クリア</a>{% endif %}
+    </form>
+    <a href="/admin/add" class="btn-primary">＋ 問題追加</a>
+  </div>
 
   <div class="admin-count">{{ questions|length }}件</div>
 

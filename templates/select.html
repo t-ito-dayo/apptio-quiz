@@ -4,8 +4,8 @@
   <h2 class="page-title">コースを選ぶ</h2>
 
   <div class="select-tabs">
-    <button class="select-tab active" onclick="showTab('category', this)">カテゴリ別</button>
-    <button class="select-tab" onclick="showTab('pj', this)">PJ別</button>
+    <button class="select-tab active" id="tab-btn-category" onclick="showTab('category', this)">カテゴリ別</button>
+    <button class="select-tab" id="tab-btn-pj" onclick="showTab('pj', this)">PJ別</button>
   </div>
 
   <div id="tab-category" class="select-section">
@@ -46,6 +46,10 @@
       <p>PJがまだ登録されていません</p>
     </div>
     {% endif %}
+  </div>
+
+  <div class="admin-link-wrap">
+    <a href="/admin" class="admin-link">🔧 問題管理</a>
   </div>
 </div>
 
