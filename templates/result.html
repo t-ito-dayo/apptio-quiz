@@ -59,6 +59,14 @@
     </div>
   </div>
 
+  <div class="result-actions">
+    {% if from_review is defined and from_review %}
+    <a href="/review" class="btn-primary">復習に戻る</a>
+    {% else %}
+    <a href="/quiz" class="btn-primary">次の問題へ</a>
+    {% endif %}
+  </div>
+
   <div class="quiz-actions">
     <button class="quiz-action-btn" onclick="toggleDiscuss()" id="discussBtn"
       {% if my_discuss %}style="border-color:#f6ad55;background:#fffbeb;"{% endif %}>
@@ -88,14 +96,6 @@
     {% endfor %}
   </div>
   {% endif %}
-
-  <div class="result-actions">
-    {% if from_review is defined and from_review %}
-    <a href="/review" class="btn-primary">復習に戻る</a>
-    {% else %}
-    <a href="/quiz" class="btn-primary">次の問題へ</a>
-    {% endif %}
-  </div>
 </div>
 
 <script>
