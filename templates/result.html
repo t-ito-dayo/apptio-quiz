@@ -133,41 +133,30 @@ function toggleDiscuss() {
             fill.style.width = '0%';
             setTimeout(function() {
               bar.classList.add('glowing');
-              // 新レベルのバーをオーバーシュートで充填
-              var overshoot = Math.min(target + 6, 100);
-              fill.style.transition = 'width 1s cubic-bezier(.2,0,.5,1)';
-              fill.style.width = overshoot + '%';
+              // 新レベルのバーを充填
+              fill.style.transition = 'width 1.1s cubic-bezier(.22,1,.36,1)';
+              fill.style.width = target + '%';
               setTimeout(function() {
-                fill.style.transition = 'width .25s cubic-bezier(.4,0,.2,1)';
-                fill.style.width = target + '%';
-                // 着地エフェクト
-                setTimeout(function() {
-                  fill.classList.add('pop');
-                  setTimeout(function() { fill.classList.remove('pop'); }, 150);
-                  bar.classList.remove('glowing');
-                  // バナー＋コンフェティ
-                  var banner = document.getElementById('levelUpBanner');
-                  if (banner) banner.classList.add('show');
-                  launchConfetti();
-                }, 300);
-              }, 1050);
+                fill.classList.add('pop');
+                setTimeout(function() { fill.classList.remove('pop'); }, 150);
+                bar.classList.remove('glowing');
+                // バナー＋コンフェティ
+                var banner = document.getElementById('levelUpBanner');
+                if (banner) banner.classList.add('show');
+                launchConfetti();
+              }, 1200);
             }, 180);
           }, 450);
         }, 1200);
 
       } else {
-        // 通常：オーバーシュートして着地
-        var overshoot = Math.min(target + 5, 100);
-        fill.style.transition = 'width 1s cubic-bezier(.2,0,.5,1)';
-        fill.style.width = overshoot + '%';
+        // 通常：直接着地
+        fill.style.transition = 'width 1.1s cubic-bezier(.22,1,.36,1)';
+        fill.style.width = target + '%';
         setTimeout(function() {
-          fill.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
-          fill.style.width = target + '%';
-          setTimeout(function() {
-            fill.classList.add('pop');
-            setTimeout(function() { fill.classList.remove('pop'); bar.classList.remove('glowing'); }, 150);
-          }, 220);
-        }, 1050);
+          fill.classList.add('pop');
+          setTimeout(function() { fill.classList.remove('pop'); bar.classList.remove('glowing'); }, 150);
+        }, 1150);
       }
     }, 320);
   }, 350);
