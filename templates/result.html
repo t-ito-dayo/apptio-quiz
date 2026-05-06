@@ -107,9 +107,7 @@
                 // 着地エフェクト
                 setTimeout(function() {
                   fill.classList.add('pop');
-                  if (card) card.classList.add('shake');
                   setTimeout(function() { fill.classList.remove('pop'); }, 150);
-                  setTimeout(function() { if (card) card.classList.remove('shake'); }, 450);
                   bar.classList.remove('glowing');
                   // バナー＋コンフェティ
                   var banner = document.getElementById('levelUpBanner');
@@ -131,9 +129,7 @@
           fill.style.width = target + '%';
           setTimeout(function() {
             fill.classList.add('pop');
-            if (card) card.classList.add('shake');
-            setTimeout(function() { fill.classList.remove('pop'); }, 150);
-            setTimeout(function() { if (card) card.classList.remove('shake'); bar.classList.remove('glowing'); }, 450);
+            setTimeout(function() { fill.classList.remove('pop'); bar.classList.remove('glowing'); }, 150);
           }, 220);
         }, 1050);
       }

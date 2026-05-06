@@ -61,7 +61,7 @@ a { text-decoration: none; color: inherit; }
 .xp-badge { background: rgba(255,255,255,.2); border-radius: 20px; padding: 6px 14px; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .progress-wrap { }
 .progress-bar { background: rgba(255,255,255,.2); border-radius: 99px; height: 10px; overflow: hidden; margin-bottom: 6px; }
-.progress-fill { background: linear-gradient(90deg, #2b6cb0, #4299e1, #68d391); background-size: 200% 100%; height: 100%; border-radius: 99px; transition: width .5s; animation: xpFlow 2.5s linear infinite; }
+.progress-fill { background: linear-gradient(90deg, #2b6cb0, #4299e1, #68d391); height: 100%; border-radius: 99px; transition: width .5s; }
 .progress-label { font-size: 12px; color: #bee3f8; text-align: right; }
 
 .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -198,14 +198,10 @@ a { text-decoration: none; color: inherit; }
 .xp-progress-bar { background: #1a2035; border-radius: 99px; height: 22px; overflow: hidden; box-shadow: inset 0 3px 6px rgba(0,0,0,.4); transition: box-shadow .3s; }
 .xp-progress-bar.charging { box-shadow: inset 0 3px 6px rgba(0,0,0,.4), 0 0 10px rgba(66,153,225,.4); }
 .xp-progress-bar.glowing { box-shadow: inset 0 3px 6px rgba(0,0,0,.4), 0 0 22px rgba(66,153,225,.8), 0 0 40px rgba(99,179,237,.35); }
-.xp-progress-fill { height: 100%; background: linear-gradient(90deg, #1e4e8c, #3182ce, #63b3ed, #3182ce, #1e4e8c); background-size: 200% 100%; border-radius: 99px; width: 0%; position: relative; overflow: hidden; animation: xpFlow 1.8s linear infinite; }
-.xp-progress-fill::after { content: ''; position: absolute; top: 0; left: -80%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent); animation: xpShimmer 1s ease-in-out infinite; }
-.xp-progress-fill.pop { filter: brightness(2.2); transition: filter .05s; }
+.xp-progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #4299e1, #63b3ed); border-radius: 99px; width: 0%; position: relative; overflow: hidden; animation: xpPulse 2s ease-in-out infinite; }
+.xp-progress-fill.pop { filter: brightness(1.5); transition: filter .05s; }
 .xp-progress-fill.flash { background: #fff !important; animation: none !important; filter: brightness(1) !important; }
-.xp-progress-card.shake { animation: cardShake .4s ease-in-out; }
-@keyframes xpFlow { from { background-position: 0% center; } to { background-position: -200% center; } }
-@keyframes xpShimmer { 0% { left: -80%; } 100% { left: 180%; } }
-@keyframes cardShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+@keyframes xpPulse { 0%, 100% { filter: brightness(0.88); } 50% { filter: brightness(1.18); } }
 .level-up-banner { display: none; margin-top: 16px; background: linear-gradient(135deg, #fefcbf, #f6ad55); color: #7b341e; border-radius: 16px; padding: 16px 20px; font-weight: 900; font-size: 20px; text-align: center; border: 2px solid #f6e05e; letter-spacing: .02em; }
 .level-up-banner.show { display: block; animation: levelUpPop .7s cubic-bezier(.175,.885,.32,1.275) forwards, levelUpPulse 1.2s .7s ease-in-out infinite alternate; }
 @keyframes levelUpPop { 0% { transform: scale(.3) rotate(-6deg); opacity: 0; } 65% { transform: scale(1.1) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
