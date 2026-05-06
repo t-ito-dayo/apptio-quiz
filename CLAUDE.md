@@ -42,8 +42,7 @@
 - 手順書 → RunBook（ランブックではない）
 
 ### DB接続
-- NEON_DATABASE_URL を使う
-- `postgresql://neondb_owner:npg_MDIesP9go7zh@ep-icy-term-aopbcnu8-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require`
+- NEON_DATABASE_URL を使う（URLはVercelの環境変数に設定済み。CLAUDE.mdには書かない）
 
 ### 問題IDの命名規則
 - 新規追加は `{偽名}_{連番3桁}` 例: cm_016, orix_001
