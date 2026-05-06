@@ -59,6 +59,36 @@
     </div>
   </div>
 
+  <div class="quiz-actions">
+    <button class="quiz-action-btn" onclick="toggleDiscuss()" id="discussBtn"
+      {% if my_discuss %}style="border-color:#f6ad55;background:#fffbeb;"{% endif %}>
+      <span class="quiz-action-icon">🗣️</span>
+      <span class="quiz-action-label">議論したい</span>
+      <span class="quiz-action-desc">問題不備・もっと理解を深めたい時に</span>
+    </button>
+  </div>
+
+  <div class="discuss-panel" id="discussPanel" style="display:none;">
+    <div class="discuss-hint">問題に不備がある・もっと理解を深めたいと思ったら押してね。みんなで議論しよう！</div>
+    <form method="post" action="/discuss">
+      <input type="hidden" name="question_id" value="{{ question.id }}">
+      <textarea name="comment" class="discuss-textarea" placeholder="コメント（任意）" rows="3"></textarea>
+      <button type="submit" class="btn-primary btn-full">議論リクエストを送る</button>
+    </form>
+  </div>
+
+  {% if discussions %}
+  <div class="discuss-list">
+    <div class="discuss-list-title">🗣️ 議論リクエスト（{{ discussions|length }}件）</div>
+    {% for d in discussions %}
+    <div class="discuss-item">
+      <span class="discuss-name">{{ d.name }}</span>
+      {% if d.comment %}<span class="discuss-comment">{{ d.comment }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="result-actions">
     {% if from_review is defined and from_review %}
     <a href="/review" class="btn-primary">復習に戻る</a>
@@ -68,6 +98,12 @@
   </div>
 </div>
 
+<script>
+function toggleDiscuss() {
+  var panel = document.getElementById('discussPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 <script>
 (function() {
   var fill = document.getElementById('xpFill');

@@ -296,6 +296,9 @@ def answer():
     ]
     mascot_comment = random.choice(_comments_correct if is_correct else _comments_wrong)
 
+    discussions = get_discussions(q_id)
+    my_discuss = any(d['name'] == session.get('user_name') for d in discussions)
+
     return render_template('result.html',
         question=question,
         selected=choice,
@@ -310,6 +313,8 @@ def answer():
         progress_after=progress_after,
         level_up=level_up,
         mascot_comment=mascot_comment,
+        discussions=discussions,
+        my_discuss=my_discuss,
     )
 
 
@@ -409,6 +414,9 @@ def review_answer():
         conn.commit()
     conn.close()
 
+    discussions = get_discussions(q_id)
+    my_discuss = any(d['name'] == session.get('user_name') for d in discussions)
+
     return render_template('result.html',
         question=question,
         selected=choice,
@@ -416,7 +424,9 @@ def review_answer():
         xp_earned=XP_CORRECT if is_correct else 0,
         new_badges=[],
         BADGES=BADGES,
-        from_review=True
+        from_review=True,
+        discussions=discussions,
+        my_discuss=my_discuss,
     )
 
 
