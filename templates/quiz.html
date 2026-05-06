@@ -2,7 +2,11 @@
 {% block content %}
 <div class="quiz-wrap">
   <div class="quiz-meta">
-    <span class="quiz-category">{{ question.category }}</span>
+    <div class="quiz-tags">
+      <span class="quiz-id">{{ question.id }}</span>
+      <span class="quiz-category">{{ question.category }}</span>
+      {% if question.scope == 'specific' %}<span class="quiz-specific">PJ固有</span>{% endif %}
+    </div>
     <span class="quiz-progress">{{ answered + 1 }} / {{ total }}</span>
   </div>
 
@@ -21,5 +25,53 @@
       <button type="submit" class="btn-primary btn-full">回答する</button>
     </form>
   </div>
+
+  <div class="quiz-actions">
+    <button class="quiz-action-btn" onclick="toggleDiscuss()" id="discussBtn"
+      {% if my_discuss %}style="border-color:#f6ad55;background:#fffbeb;"{% endif %}>
+      <span class="quiz-action-icon">🗣️</span>
+      <span class="quiz-action-label">議論したい</span>
+      <span class="quiz-action-desc">問題不備・もっと理解を深めたい時に</span>
+    </button>
+
+    <form method="post" action="/flag_specific" class="quiz-action-form" onsubmit="return confirm('この問題をPJ固有としてフラグを立てますか？\n一般コースから除外されます。')">
+      <input type="hidden" name="question_id" value="{{ question.id }}">
+      <button type="submit" class="quiz-action-btn">
+        <span class="quiz-action-icon">🚩</span>
+        <span class="quiz-action-label">PJ固有フラグ</span>
+        <span class="quiz-action-desc">一般コースから除外する</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- 議論フォーム（トグル） -->
+  <div class="discuss-panel" id="discussPanel" style="display:none;">
+    <div class="discuss-hint">問題に不備がある・もっと理解を深めたいと思ったら押してね。みんなで議論しよう！</div>
+    <form method="post" action="/discuss">
+      <input type="hidden" name="question_id" value="{{ question.id }}">
+      <textarea name="comment" class="discuss-textarea" placeholder="コメント（任意）" rows="3"></textarea>
+      <button type="submit" class="btn-primary btn-full">議論リクエストを送る</button>
+    </form>
+  </div>
+
+  <!-- 議論リスト -->
+  {% if discussions %}
+  <div class="discuss-list">
+    <div class="discuss-list-title">🗣️ 議論リクエスト（{{ discussions|length }}件）</div>
+    {% for d in discussions %}
+    <div class="discuss-item">
+      <span class="discuss-name">{{ d.name }}</span>
+      {% if d.comment %}<span class="discuss-comment">{{ d.comment }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
+
+<script>
+function toggleDiscuss() {
+  var panel = document.getElementById('discussPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 {% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-wrap">
+  <h2 class="page-title">{{ '✏️ 文字起こし編集' if t else '➕ 文字起こし追加' }}</h2>
+
+  <form method="post" class="edit-form">
+    <div class="form-group">
+      <label>企業名</label>
+      <input type="text" name="company" value="{{ t.company if t else '' }}" class="form-input" placeholder="例：CM">
+    </div>
+
+    <div class="form-group">
+      <label>タイトル <span style="color:#e53e3e;">*</span></label>
+      <input type="text" name="title" value="{{ t.title if t else '' }}" class="form-input" required placeholder="例：CM社 導入MTG 2024-11-15">
+    </div>
+
+    <div class="form-group">
+      <label>文字起こし <span style="color:#e53e3e;">*</span></label>
+      <textarea name="transcript" class="form-textarea" rows="20" required placeholder="ここに文字起こしテキストを貼り付けてください">{{ t.transcript if t else '' }}</textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">保存</button>
+      <a href="/admin/transcripts" class="btn-ghost">キャンセル</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from database import (init_db, get_db, get_level, xp_for_next_level, get_progress,
                       check_badges, BADGES, LEVELS, get_questions, get_question_by_id,
-                      get_projects, update_question, delete_question)
+                      get_projects, update_question, delete_question,
+                      get_discussions, add_discussion, get_all_discussions, remove_discussions,
+                      get_transcripts, get_transcript_by_id, add_transcript, update_transcript, delete_transcript)
 import random
 import os
 from google import genai as google_genai
@@ -138,9 +140,9 @@ def quiz():
     if f['type'] == 'pj':
         pool = get_questions(pj_id=f['value'])
     elif f['value'] == 'all':
-        pool = get_questions()
+        pool = get_questions(exclude_specific=True)
     else:
-        pool = get_questions(category=f['value'])
+        pool = get_questions(category=f['value'], exclude_specific=True)
 
     conn = get_db()
     answered = conn.execute(
@@ -153,10 +155,21 @@ def quiz():
     if not remaining:
         return redirect(url_for('completed'))
 
-    q = random.choice(remaining)
-    session['current_question'] = q['id']
-    return render_template('quiz.html', question=q, total=len(pool),
-                           answered=len([x for x in pool if x['id'] in answered_ids]))
+    stay = request.args.get('stay')
+    if stay and session.get('current_question'):
+        current_q = next((q for q in pool if q['id'] == session['current_question']), None)
+    else:
+        current_q = None
+
+    if not current_q:
+        current_q = random.choice(remaining)
+        session['current_question'] = current_q['id']
+
+    discussions = get_discussions(current_q['id'])
+    my_discuss = any(d['name'] == session.get('user_name') for d in discussions)
+    return render_template('quiz.html', question=current_q, total=len(pool),
+                           answered=len([x for x in pool if x['id'] in answered_ids]),
+                           discussions=discussions, my_discuss=my_discuss)
 
 
 @app.route('/answer', methods=['POST'])
@@ -179,6 +192,11 @@ def answer():
         (session['user_id'], q_id)
     ).fetchone()
 
+    user_before = conn.execute('SELECT xp FROM users WHERE id=?', (session['user_id'],)).fetchone()
+    xp_before = user_before['xp']
+    level_before, _ = get_level(xp_before)
+    progress_before = get_progress(xp_before)
+
     if not already:
         conn.execute(
             'INSERT INTO answers (user_id, question_id, is_correct) VALUES (?,?,?)',
@@ -192,11 +210,91 @@ def answer():
     new_badges = check_badges(session['user_id'], conn)
 
     total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-    user = conn.execute('SELECT xp FROM users WHERE id=?', (session['user_id'],)).fetchone()
-    level, level_title = get_level(user['xp'], total_q)
-    conn.execute('UPDATE users SET level=? WHERE id=?', (level, session['user_id']))
+    user_after = conn.execute('SELECT xp FROM users WHERE id=?', (session['user_id'],)).fetchone()
+    xp_after = user_after['xp']
+    level_after, level_title = get_level(xp_after, total_q)
+    progress_after = get_progress(xp_after)
+    level_up = level_after > level_before
+    conn.execute('UPDATE users SET level=? WHERE id=?', (level_after, session['user_id']))
     conn.commit()
     conn.close()
+
+    import random
+    _comments_correct = [
+        'やったね！さすがだよ！🐾',
+        'すごい！正解だよ！🎉',
+        'やるじゃん！その調子だよ！✨',
+        'パーフェクト！どんどんいこう！🐾',
+        'よくできました！えらいぞ！🎊',
+        'さすが！ぼくも嬉しいよ！🐶',
+        '正解！頭いい〜！🌟',
+        'ナイス！さすがの一言だよ！💪',
+        'ぼくより詳しいんじゃない！？🐾',
+        '完璧！この調子でいこう！🔥',
+        'すばらしい！次も期待してるよ！🎯',
+        '正解！きみならできると思ってたよ！🌈',
+        'やっほー！正解だよ！🎊',
+        'かっこいい！どんどん強くなってるね！⭐',
+        'お見事！ぼくも勉強になったよ！📚',
+        'さすが！Apptioマスターに近づいてるね！🏆',
+        'いいね！その知識、本物だよ！✨',
+        'ワン！正解！うれしすぎる！🐶',
+        'すごすぎ！天才なの！？🌟',
+        'わんわん！正解〜！しっぽ振っちゃう！🐾',
+        'うれしい！ぼくも一緒に喜んでいい！？🐶',
+        'かしこい！においでわかったよ（うそ）🐾',
+        'ぼく的にも正解だと思ってた！（あとから）🐶',
+        'えっ、すごくない！？ちょっと見直したよ！🌟',
+        '正解！今夜は骨ガムあげたい気持ちだよ！🦴',
+        'やばい、強い！このまま全問正解いける！🔥',
+        'ぼくうれしすぎてくるくる回っちゃう！🐾',
+        'さすがすぎる…！ぼく、ファンになっちゃった！🐶',
+        'Apptioの犬といえばきみだよ！🐾',
+        '正解！解説も読んで完璧にしよう！📚',
+        'ナイスすぎ！ご褒美あげたいくらい！🎁',
+        'よっしゃ！全問正解目指して突っ走れ！🚀',
+        '正解！ぼくより頭いいじゃん…！🐶',
+        'やった！きみが正解するとぼくも嬉しい！🌈',
+        'その知識、本番でも絶対使えるよ！💼',
+    ]
+    _comments_wrong = [
+        'ドンマイ！解説読んだら次は絶対いけるよ！🐾',
+        '惜しい！でも大丈夫、一緒に頑張ろう！💪',
+        'ちょっと難しかったね！復習してみよう！📖',
+        'ドンマイ！次は正解できるよ！🐶',
+        '大丈夫！失敗から学ぶのが一番だよ！🌱',
+        'めげないで！次の問題も挑戦しよう！🔥',
+        '難問だったね！解説でばっちり確認しよう！📝',
+        'うーん惜しい！でもきみならすぐ覚えられるよ！🐾',
+        'ぼくも最初は知らなかったよ！一緒に覚えよ！🐶',
+        'ドンマイドンマイ！次いこう次！✨',
+        'むずかしかったね〜！でもこれで覚えられたね！🌟',
+        '解説読んで、次は絶対正解だよ！💪',
+        'まだまだこれからだよ！諦めないで！🔥',
+        'いい挑戦だったよ！次は絶対決めよう！🎯',
+        'ここ、ひっかかりやすいんだよね〜！📝',
+        '1回間違えた方が記憶に残るって言うよ！🧠',
+        'こういう問題、実務でも出てくるやつ！覚えとこ！💡',
+        'ぼくも正直むずかしかったよ（こっそり）🐾',
+        'ドンマイ！においは正解のにおいしてたのに！🐶',
+        'しっぽ下がっちゃったけど…次で絶対上げよう！🐾',
+        'ワン…でも大丈夫！ぼくが一緒にいるよ！🐶',
+        '間違えた問題が一番の財産だよ！✨',
+        'くじけないで！積み重ねが大事だよ！📚',
+        'よーし、解説読んで次こそ決めよう！🎯',
+        '難しかったね、でも諦めないで！💪',
+        'ぼくも応援してるよ！絶対大丈夫！🐾',
+        '焦らなくていいよ、じっくりいこう！🌿',
+        'ここを間違えるってことは、覚えたら差がつくってこと！💡',
+        'ぼく的には惜しいと思ってた！次は一緒に正解しよう！🐶',
+        '間違えても続けてることが一番えらいよ！🌟',
+        'ドンマイ！ぼくのしっぽは止まらないよ（励ましてる）🐾',
+        'うーん、難問！解説で一緒に確認しよ！📖',
+        'ここさえ覚えれば、ぐっと強くなれるよ！🔥',
+        'ぼく、きみのこと信じてるよ！次！✨',
+        '解説読んで、次に出たとき絶対決めてね！🎯',
+    ]
+    mascot_comment = random.choice(_comments_correct if is_correct else _comments_wrong)
 
     return render_template('result.html',
         question=question,
@@ -204,8 +302,66 @@ def answer():
         is_correct=is_correct,
         xp_earned=xp_earned,
         new_badges=new_badges,
-        BADGES=BADGES
+        BADGES=BADGES,
+        level_before=level_before,
+        level_after=level_after,
+        level_title=level_title,
+        progress_before=progress_before,
+        progress_after=progress_after,
+        level_up=level_up,
+        mascot_comment=mascot_comment,
     )
+
+
+@app.route('/admin/toggle_scope/<q_id>', methods=['POST'])
+def toggle_scope(q_id):
+    conn = get_db()
+    row = conn.execute('SELECT scope FROM questions WHERE id=%s', (q_id,)).fetchone()
+    if row:
+        new_scope = 'general' if row['scope'] == 'specific' else 'specific'
+        conn.execute('UPDATE questions SET scope=%s WHERE id=%s', (new_scope, q_id))
+        conn.commit()
+    conn.close()
+    return redirect(url_for('admin'))
+
+
+@app.route('/flag_specific', methods=['POST'])
+def flag_specific():
+    q_id = request.form.get('question_id')
+    if q_id:
+        conn = get_db()
+        conn.execute("UPDATE questions SET scope='specific' WHERE id=%s", (q_id,))
+        conn.commit()
+        conn.close()
+    return redirect(url_for('quiz'))
+
+
+@app.route('/discuss/list')
+def discuss_list():
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    items = get_all_discussions()
+    return render_template('discuss_list.html', items=items)
+
+
+@app.route('/discuss/remove/<q_id>', methods=['POST'])
+def discuss_remove(q_id):
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    remove_discussions(q_id)
+    return redirect(url_for('discuss_list'))
+
+
+@app.route('/discuss', methods=['POST'])
+def discuss():
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    q_id = request.form.get('question_id')
+    comment = request.form.get('comment', '').strip()
+    if q_id:
+        add_discussion(q_id, session['user_id'], comment)
+        session['current_question'] = q_id
+    return redirect(url_for('quiz', stay='1'))
 
 
 @app.route('/review')
@@ -378,21 +534,23 @@ def quiz_select():
     if 'user_id' not in session:
         return redirect(url_for('index'))
     from collections import Counter
+    general_q = get_questions(exclude_specific=True)
     all_q = get_questions()
-    cat_counts = Counter(q['category'] for q in all_q)
+    cat_counts = Counter(q['category'] for q in general_q)
     categories = sorted(cat_counts.items())
     cat_icons = {
-        'TBM基礎':   '📘',
-        'TBMモデル': '🏗️',
+        'TBM基礎':    '📘',
+        'TBMモデル':  '🏗️',
         'Apptio基礎': '⚡',
         'Apptio実務': '🔧',
-        'PMスキル':  '🎯',
+        'PMスキル':   '🎯',
+        'インフラ配賦': '🖥️',
     }
     projects = get_projects()
     pj_counts = Counter(q['pj_id'] for q in all_q if q['pj_id'])
     return render_template('select.html',
         categories=categories,
-        total=len(all_q),
+        total=len(general_q),
         cat_icons=cat_icons,
         projects=projects,
         pj_counts=pj_counts,
@@ -470,7 +628,7 @@ def admin():
             "SELECT q.*, p.name as pj_name FROM questions q LEFT JOIN projects p ON q.pj_id = p.id ORDER BY q.created_at, q.id"
         ).fetchall()
     conn.close()
-    questions = [{'id': r['id'], 'category': r['category'], 'question': r['question'], 'pj_name': r['pj_name']} for r in rows]
+    questions = [{'id': r['id'], 'category': r['category'], 'question': r['question'], 'pj_name': r['pj_name'], 'scope': r['scope']} for r in rows]
     return render_template('admin.html', questions=questions, keyword=keyword)
 
 
@@ -478,6 +636,7 @@ def admin():
 @admin_required
 def admin_edit(q_id):
     projects = get_projects()
+    from_page = request.args.get('from') or request.form.get('from_page', '')
     if request.method == 'POST':
         choices = [
             request.form.get('choice0', ''),
@@ -485,6 +644,7 @@ def admin_edit(q_id):
             request.form.get('choice2', ''),
             request.form.get('choice3', ''),
         ]
+        tid = request.form.get('transcript_id')
         update_question(
             q_id=q_id,
             category=request.form.get('category', ''),
@@ -493,13 +653,18 @@ def admin_edit(q_id):
             answer=request.form.get('answer', 0),
             explanation=request.form.get('explanation', ''),
             pj_id=request.form.get('pj_id') or None,
+            scope=request.form.get('scope', 'general'),
+            transcript_id=int(tid) if tid else None,
         )
+        if request.form.get('from_page') == 'discuss':
+            return redirect(url_for('discuss_list'))
         return redirect(url_for('admin'))
 
     q = get_question_by_id(q_id)
     if not q:
         return '問題が見つかりません', 404
-    return render_template('admin_edit.html', q=q, projects=projects)
+    transcripts = get_transcripts()
+    return render_template('admin_edit.html', q=q, projects=projects, from_page=from_page, transcripts=transcripts)
 
 
 @app.route('/admin/delete/<q_id>', methods=['POST'])
@@ -538,6 +703,50 @@ def admin_add():
         conn.close()
         return redirect(url_for('admin'))
     return render_template('admin_add.html', projects=projects)
+
+
+@app.route('/admin/transcripts')
+@admin_required
+def admin_transcripts():
+    transcripts = get_transcripts()
+    return render_template('admin_transcripts.html', transcripts=transcripts)
+
+
+@app.route('/admin/transcripts/add', methods=['GET', 'POST'])
+@admin_required
+def admin_transcript_add():
+    if request.method == 'POST':
+        add_transcript(
+            title=request.form.get('title', ''),
+            transcript=request.form.get('transcript', ''),
+            company=request.form.get('company', ''),
+        )
+        return redirect(url_for('admin_transcripts'))
+    return render_template('admin_transcript_edit.html', t=None)
+
+
+@app.route('/admin/transcripts/edit/<int:t_id>', methods=['GET', 'POST'])
+@admin_required
+def admin_transcript_edit(t_id):
+    t = get_transcript_by_id(t_id)
+    if not t:
+        return '文字起こしが見つかりません', 404
+    if request.method == 'POST':
+        update_transcript(
+            t_id=t_id,
+            title=request.form.get('title', ''),
+            transcript=request.form.get('transcript', ''),
+            company=request.form.get('company', ''),
+        )
+        return redirect(url_for('admin_transcripts'))
+    return render_template('admin_transcript_edit.html', t=t)
+
+
+@app.route('/admin/transcripts/delete/<int:t_id>', methods=['POST'])
+@admin_required
+def admin_transcript_delete(t_id):
+    delete_transcript(t_id)
+    return redirect(url_for('admin_transcripts'))
 
 
 if __name__ == '__main__':

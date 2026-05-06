@@ -49,9 +49,9 @@
       <div class="action-icon">👥</div>
       <div class="action-label">チーム</div>
     </a>
-    <a href="/chat" class="action-card">
-      <div class="action-icon">💬</div>
-      <div class="action-label">AI に質問</div>
+    <a href="https://notebooklm.google.com/notebook/f6f407f8-40f4-4e88-a9bb-0ca7801bbb28?authuser=1" target="_blank" class="action-card">
+      <div class="action-icon">🤖</div>
+      <div class="action-label">NotebookLM</div>
     </a>
   </div>
 
@@ -91,6 +91,7 @@
     <div class="section-title">獲得バッジ</div>
     <div class="badge-grid">
       {% for key, info in BADGES.items() %}
+      {% if info.get('break_before') %}<div class="badge-group-break"></div>{% endif %}
       <div class="badge-item {{ 'earned' if key in badges else 'locked' }}">
         <div class="badge-icon">{{ info.icon if key in badges else '🔒' }}</div>
         <div class="badge-name">{{ info.label }}</div>

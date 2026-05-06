@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-wrap">
+  <h2 class="page-title">🗣️ 議論リスト</h2>
+
+  {% if not items %}
+  <p style="color:#718096;text-align:center;padding:40px 0;">まだ議論リクエストはありません</p>
+  {% else %}
+  <div class="discuss-list-wrap">
+    {% for item in items %}
+    <div class="discuss-list-card">
+      <div class="discuss-list-meta">
+        <span class="quiz-id">{{ item.question_id }}</span>
+        <span class="quiz-category">{{ item.category }}</span>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+          <form method="post" action="/discuss/remove/{{ item.question_id }}" style="display:inline" onsubmit="return confirm('議論リストから外しますか？')">
+            <button type="submit" class="btn-delete" style="font-size:11px;padding:3px 8px;">リストから外す</button>
+          </form>
+          <a href="/admin/edit/{{ item.question_id }}?from=discuss" class="btn-edit">編集</a>
+        </div>
+      </div>
+      <div class="discuss-list-q">{{ item.question[:80] }}{% if item.question|length > 80 %}…{% endif %}</div>
+      <div class="discuss-choices">
+        {% for c in item.choices %}
+        <div class="discuss-choice {{ 'discuss-choice-correct' if loop.index0 == item.answer else 'discuss-choice-wrong' }}">
+          {{ '✅' if loop.index0 == item.answer else '❌' }} {{ c }}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="discuss-list-entries">
+        {% for e in item.entries %}
+        <div class="discuss-entry">
+          <span class="discuss-name">{{ e.name }}</span>
+          {% if e.comment %}<span class="discuss-comment">{{ e.comment }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style="margin-top:24px;">
+    <a href="/quiz/select" class="btn-ghost">← 戻る</a>
+  </div>
+</div>
+{% endblock %}

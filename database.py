@@ -100,6 +100,17 @@ def init_db():
     ''')
 
     conn.execute('''
+        CREATE TABLE IF NOT EXISTS transcripts (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            source_url TEXT,
+            transcript TEXT NOT NULL,
+            recorded_at DATE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS questions (
             id TEXT PRIMARY KEY,
             pj_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
@@ -111,6 +122,21 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS discussions (
+            id SERIAL PRIMARY KEY,
+            question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(question_id, user_id)
+        )
+    ''')
+
+    # カラム追加マイグレーション（既存DBへの対応）
+    conn.execute("ALTER TABLE questions ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'general'")
+    conn.execute('ALTER TABLE questions ADD COLUMN IF NOT EXISTS transcript_id INTEGER REFERENCES transcripts(id) ON DELETE SET NULL')
 
     # 既存のquestions.pyから初回マイグレーション
     count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
@@ -148,10 +174,12 @@ def _row_to_question(row):
         'choices': choices,
         'answer': row['answer'],
         'explanation': row['explanation'],
+        'scope': row['scope'],
+        'transcript_id': row['transcript_id'],
     }
 
 
-def get_questions(pj_id=None, category=None):
+def get_questions(pj_id=None, category=None, exclude_specific=False):
     conn = get_db()
     conditions = []
     params = []
@@ -163,6 +191,8 @@ def get_questions(pj_id=None, category=None):
     if category:
         conditions.append('category = ?')
         params.append(category)
+    if exclude_specific:
+        conditions.append("scope = 'general'")
     query = 'SELECT * FROM questions'
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
@@ -186,11 +216,11 @@ def get_projects():
     return [{'id': r['id'], 'name': r['name']} for r in rows]
 
 
-def update_question(q_id, category, question, choices, answer, explanation, pj_id=None):
+def update_question(q_id, category, question, choices, answer, explanation, pj_id=None, scope='general', transcript_id=None):
     conn = get_db()
     conn.execute(
-        'UPDATE questions SET category=?, question=?, choices=?::jsonb, answer=?, explanation=?, pj_id=? WHERE id=?',
-        (category, question, json.dumps(choices, ensure_ascii=False), int(answer), pj_id or None, q_id)
+        'UPDATE questions SET category=?, question=?, choices=?::jsonb, answer=?, explanation=?, pj_id=?, scope=?, transcript_id=? WHERE id=?',
+        (category, question, json.dumps(choices, ensure_ascii=False), int(answer), explanation, pj_id or None, scope, transcript_id or None, q_id)
     )
     conn.commit()
     conn.close()
@@ -268,12 +298,22 @@ BADGES = {
     'first_correct':   {'label': '初正解',       'icon': '🎯', 'desc': '初めて正解した'},
     'streak_3':        {'label': '3連続正解',     'icon': '🔥', 'desc': '3問連続正解'},
     'streak_5':        {'label': '5連続正解',     'icon': '⚡', 'desc': '5問連続正解'},
-    'total_10':        {'label': '10問クリア',    'icon': '🏅', 'desc': '合計10問正解'},
+    'perfect_set':     {'label': '10連続正解',    'icon': '💎', 'desc': '10問連続正解'},
+    'streak_15':       {'label': '15連続正解',    'icon': '🌈', 'desc': '15問連続正解'},
+    'streak_20':       {'label': '20連続正解',    'icon': '👑', 'desc': '20問連続正解'},
+    'total_10':        {'label': '10問クリア',    'icon': '🏅', 'desc': '合計10問正解',  'break_before': True},
     'total_30':        {'label': '30問クリア',    'icon': '🥈', 'desc': '合計30問正解'},
     'total_50':        {'label': '50問クリア',    'icon': '🥇', 'desc': '合計50問正解'},
-    'level_3':         {'label': 'Lv3到達',       'icon': '⭐', 'desc': 'レベル3に到達'},
-    'level_5':         {'label': 'Lv5到達',       'icon': '🌟', 'desc': 'レベル5に到達'},
-    'perfect_set':     {'label': 'パーフェクト',  'icon': '💎', 'desc': '10問連続正解'},
+    'total_100':       {'label': '100問クリア',   'icon': '🎖️', 'desc': '合計100問正解'},
+    'total_200':       {'label': '200問クリア',   'icon': '🚀', 'desc': '合計200問正解'},
+    'total_300':       {'label': '300問クリア',   'icon': '🦁', 'desc': '合計300問正解'},
+    'total_400':       {'label': '400問クリア',   'icon': '🔮', 'desc': '合計400問正解'},
+    'total_500':       {'label': '500問クリア',   'icon': '🏆', 'desc': '合計500問正解'},
+    'total_600':       {'label': '600問クリア',   'icon': '🌊', 'desc': '合計600問正解'},
+    'total_700':       {'label': '700問クリア',   'icon': '⚔️', 'desc': '合計700問正解'},
+    'total_800':       {'label': '800問クリア',   'icon': '🦅', 'desc': '合計800問正解'},
+    'total_900':       {'label': '900問クリア',   'icon': '🌙', 'desc': '合計900問正解'},
+    'total_1000':      {'label': '1000問クリア',  'icon': '🌟', 'desc': '合計1000問正解'},
 }
 
 def check_badges(user_id, conn):
@@ -287,11 +327,15 @@ def check_badges(user_id, conn):
     level = user['level']
 
     def award(key):
-        conn.execute(
-            'INSERT INTO badges (user_id, badge_key) VALUES (?,?) ON CONFLICT (user_id, badge_key) DO NOTHING',
-            (user_id, key)
-        )
-        new_badges.append(key)
+        existing = conn.execute(
+            'SELECT 1 FROM badges WHERE user_id=? AND badge_key=?', (user_id, key)
+        ).fetchone()
+        if not existing:
+            conn.execute(
+                'INSERT INTO badges (user_id, badge_key) VALUES (?,?) ON CONFLICT (user_id, badge_key) DO NOTHING',
+                (user_id, key)
+            )
+            new_badges.append(key)
 
     if correct >= 1:
         award('first_correct')
@@ -301,13 +345,29 @@ def check_badges(user_id, conn):
         award('total_30')
     if correct >= 50:
         award('total_50')
-    if level >= 3:
-        award('level_3')
-    if level >= 5:
-        award('level_5')
+    if correct >= 100:
+        award('total_100')
+    if correct >= 200:
+        award('total_200')
+    if correct >= 300:
+        award('total_300')
+    if correct >= 400:
+        award('total_400')
+    if correct >= 500:
+        award('total_500')
+    if correct >= 600:
+        award('total_600')
+    if correct >= 700:
+        award('total_700')
+    if correct >= 800:
+        award('total_800')
+    if correct >= 900:
+        award('total_900')
+    if correct >= 1000:
+        award('total_1000')
 
     recent = conn.execute(
-        'SELECT is_correct FROM answers WHERE user_id=? ORDER BY answered_at DESC LIMIT 10',
+        'SELECT is_correct FROM answers WHERE user_id=? ORDER BY answered_at DESC LIMIT 20',
         (user_id,)
     ).fetchall()
     streak = 0
@@ -322,6 +382,120 @@ def check_badges(user_id, conn):
         award('streak_5')
     if streak >= 10:
         award('perfect_set')
+    if streak >= 15:
+        award('streak_15')
+    if streak >= 20:
+        award('streak_20')
 
     conn.commit()
     return new_badges
+
+
+def get_discussions(question_id):
+    conn = get_db()
+    rows = conn.execute(
+        '''SELECT d.comment, d.created_at, u.name
+           FROM discussions d JOIN users u ON d.user_id = u.id
+           WHERE d.question_id = ?
+           ORDER BY d.created_at''',
+        (question_id,)
+    ).fetchall()
+    conn.close()
+    return [{'name': r['name'], 'comment': r['comment']} for r in rows]
+
+
+def add_discussion(question_id, user_id, comment):
+    conn = get_db()
+    conn.execute(
+        '''INSERT INTO discussions (question_id, user_id, comment)
+           VALUES (?, ?, ?)
+           ON CONFLICT (question_id, user_id) DO UPDATE SET comment = EXCLUDED.comment''',
+        (question_id, user_id, comment or None)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_all_discussions():
+    conn = get_db()
+    rows = conn.execute(
+        '''SELECT d.question_id, d.comment, d.created_at, u.name,
+                  q.question, q.category, q.choices, q.answer
+           FROM discussions d
+           JOIN users u ON d.user_id = u.id
+           JOIN questions q ON d.question_id = q.id
+           ORDER BY d.created_at DESC'''
+    ).fetchall()
+    conn.close()
+    grouped = {}
+    for r in rows:
+        qid = r['question_id']
+        if qid not in grouped:
+            choices = r['choices']
+            if isinstance(choices, str):
+                choices = json.loads(choices)
+            grouped[qid] = {
+                'question_id': qid,
+                'question': r['question'],
+                'category': r['category'],
+                'choices': choices,
+                'answer': r['answer'],
+                'entries': []
+            }
+        grouped[qid]['entries'].append({
+            'name': r['name'],
+            'comment': r['comment'],
+        })
+    return list(grouped.values())
+
+
+def remove_discussions(question_id):
+    conn = get_db()
+    conn.execute('DELETE FROM discussions WHERE question_id=?', (question_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_transcripts():
+    conn = get_db()
+    rows = conn.execute(
+        'SELECT id, title, company, created_at, LEFT(transcript, 100) AS preview FROM transcripts ORDER BY created_at DESC'
+    ).fetchall()
+    conn.close()
+    return [{'id': r['id'], 'title': r['title'], 'company': r['company'] or '', 'created_at': r['created_at'], 'preview': r['preview']} for r in rows]
+
+
+def get_transcript_by_id(t_id):
+    conn = get_db()
+    row = conn.execute('SELECT id, title, company, transcript FROM transcripts WHERE id=?', (t_id,)).fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {'id': row['id'], 'title': row['title'], 'company': row['company'] or '', 'transcript': row['transcript']}
+
+
+def add_transcript(title, transcript, company=''):
+    conn = get_db()
+    conn.execute(
+        'INSERT INTO transcripts (title, transcript, company) VALUES (?,?,?)',
+        (title, transcript, company)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_transcript(t_id, title, transcript, company=''):
+    conn = get_db()
+    conn.execute(
+        'UPDATE transcripts SET title=?, transcript=?, company=? WHERE id=?',
+        (title, transcript, company, t_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_transcript(t_id):
+    conn = get_db()
+    conn.execute('DELETE FROM transcripts WHERE id=?', (t_id,))
+    conn.commit()
+    conn.close()

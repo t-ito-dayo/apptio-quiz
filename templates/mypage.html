@@ -91,6 +91,7 @@
     <div class="section-title">🏅 獲得バッジ</div>
     <div class="badge-grid">
       {% for key, info in BADGES.items() %}
+      {% if info.get('break_before') %}<div class="badge-group-break"></div>{% endif %}
       <div class="badge-item {{ 'earned' if key in badge_keys else 'locked' }}">
         <div class="badge-icon">{{ info.icon if key in badge_keys else '🔒' }}</div>
         <div class="badge-name">{{ info.label }}</div>

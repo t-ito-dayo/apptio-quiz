@@ -1,5 +1,20 @@
 # ApptioQuiz
 
+## 問題量産フロー
+
+1. ユーザーが管理画面（/admin/transcripts）から文字起こしを登録する（企業名も入力）
+2. 「ID●以降で作って」と伝える → DBから該当トランスクリプトを全件取得
+3. 怪しい誤変換候補をリストアップしてユーザーに確認（よくある誤変換パターン参照）
+4. 確認後、一気に作問してINSERT（scope='general'、カテゴリはこちらで判断）
+5. 目安：1本あたり7〜8問、10本で70〜80問
+6. 1会話で処理しきれないため、5〜10本ずつ区切って渡すのが安定
+
+### 作問時のID付与ルール
+- トランスクリプトの `company` フィールドを見て、IDプレフィックスを決める
+- 例：company='CM' → `cm_XXX`、company='ORIX' → `orix_XXX`
+- 連番は既存の最大IDの次から振る（事前にDBを確認して次番を把握すること）
+- 偽名ルールと企業名の偽名テーブルも参照すること
+
 ## 問題追加のルール
 
 ### 文字起こしから問題を生成する前に必ず確認すること
@@ -14,6 +29,13 @@
 - RunBook → ランブック
 - その他、カタカナに崩れた専門用語
 
+## 企業名の偽名ルール
+問題文・選択肢・解説に企業名を記載する場合は、必ず偽名を使うこと。
+
+| 実名 | 偽名 |
+|------|------|
+| コスモ（コスモ石油） | CM |
+
 ## Apptio正式用語
 - 資本的支出 → CapEx（キャペックスではない）
 - 営業費用 → OpEx（オペックスではない）
@@ -21,9 +43,15 @@
 
 ### DB接続
 - NEON_DATABASE_URL を使う
-- URLはユーザーに都度確認する（.envには保存しない）
+- `postgresql://neondb_owner:npg_MDIesP9go7zh@ep-icy-term-aopbcnu8-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require`
 
 ### 問題IDの命名規則
-- 新規追加は `{会社名}_{連番3桁}` 例: cosmo_016, orix_001
-- 既存ID（apptio_xxx / pm_xxx / tbm_xxx）はanswersテーブル破壊リスクのため変更しない
-- コスモの次番は cosmo_016〜
+- 新規追加は `{偽名}_{連番3桁}` 例: cm_016, orix_001
+- 偽名は「企業名の偽名ルール」テーブルを参照
+- 既存ID（apptio_xxx / pm_xxx / tbm_xxx）は変更しない
+- CMの次番は cm_047〜
+
+### INSERT時のscopeルール
+- 新規問題は常に `scope='general'` で追加する
+- `scope='specific'`（PJ固有）はメンバーがアプリ上でフラグを立てたときのみ設定される
+- INSERT文で `scope='specific'` を使わない

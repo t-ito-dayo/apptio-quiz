@@ -9,17 +9,28 @@
   </div>
 
   <div id="tab-category" class="select-section">
+    <!-- ① すべて（ヒーロー） -->
+    <a href="/quiz?category=all" class="course-card-hero">
+      <div class="hero-icon">⚡</div>
+      <div class="hero-body">
+        <div class="hero-name">すべて</div>
+        <div class="hero-count">{{ total }}問</div>
+      </div>
+      <div class="hero-arrow">→</div>
+    </a>
+
+    <!-- ② 復習 -->
+    <a href="/review" class="course-card-featured">
+      <div class="featured-icon">🔄</div>
+      <div class="featured-body">
+        <div class="featured-name">復習</div>
+        <div class="featured-desc">不正解の問題をもう一度</div>
+      </div>
+    </a>
+
+    <!-- ③ カテゴリ別 -->
+    <div class="course-section-label">カテゴリ別</div>
     <div class="course-grid">
-      <a href="/review" class="course-card review-card">
-        <div class="course-icon">🔄</div>
-        <div class="course-name">復習</div>
-        <div class="course-count">不正解の問題</div>
-      </a>
-      <a href="/quiz?category=all" class="course-card all">
-        <div class="course-icon">⚡</div>
-        <div class="course-name">すべて</div>
-        <div class="course-count">{{ total }}問</div>
-      </a>
       {% for cat, count in categories %}
       <a href="/quiz?category={{ cat }}" class="course-card">
         <div class="course-icon">{{ cat_icons.get(cat, '📚') }}</div>
@@ -49,6 +60,7 @@
   </div>
 
   <div class="admin-link-wrap">
+    <a href="/discuss/list" class="admin-link">🗣️ 議論リスト</a>
     <a href="/admin" class="admin-link">🔧 問題管理</a>
   </div>
 </div>

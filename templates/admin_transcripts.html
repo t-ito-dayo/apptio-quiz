@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-wrap">
+  <h2 class="page-title">📄 文字起こし管理</h2>
+
+  <div class="admin-toolbar">
+    <a href="/admin/transcripts/add" class="btn-primary">＋ 追加</a>
+  </div>
+
+  {% if not transcripts %}
+  <p style="color:#718096;text-align:center;padding:40px 0;">まだ文字起こしは登録されていません</p>
+  {% else %}
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>企業</th>
+          <th>タイトル</th>
+          <th>冒頭プレビュー</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transcripts %}
+        <tr>
+          <td class="admin-id">{{ t.id }}</td>
+          <td><span class="badge-company">{{ t.company or '─' }}</span></td>
+          <td><strong>{{ t.title }}</strong></td>
+          <td style="color:#718096;font-size:13px;">{{ t.preview }}…</td>
+          <td class="admin-actions">
+            <a href="/admin/transcripts/edit/{{ t.id }}" class="btn-edit">編集</a>
+            <form method="post" action="/admin/transcripts/delete/{{ t.id }}" style="display:inline" onsubmit="return confirm('削除しますか？')">
+              <button type="submit" class="btn-delete">削除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:24px;">
+    <a href="/admin" class="btn-ghost">← 問題管理へ</a>
+  </div>
+</div>
+{% endblock %}

@@ -9,6 +9,28 @@
     {% endif %}
   </div>
 
+  {% if is_correct %}
+  <div class="xp-progress-card">
+    <div class="xp-progress-header">
+      <span class="xp-progress-lv">Lv.{{ level_after }}</span>
+      <span class="xp-progress-title">{{ level_title }}</span>
+    </div>
+    <div class="xp-progress-bar-wrap">
+      <div class="xp-progress-bar">
+        <div class="xp-progress-fill" id="xpFill" style="width: {{ progress_before }}%"></div>
+      </div>
+    </div>
+    {% if level_up %}
+    <div class="level-up-banner" id="levelUpBanner">🎉 LEVEL UP！Lv.{{ level_after }} 到達！</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="mascot-wrap">
+    <img src="/static/img/mascot.png" class="mascot-img" alt="mascot">
+    <div class="mascot-bubble">{{ mascot_comment }}</div>
+  </div>
+
   {% if new_badges %}
   <div class="new-badges">
     <div class="badge-announce">🎉 バッジ獲得！</div>
@@ -42,8 +64,99 @@
     <a href="/review" class="btn-primary">復習に戻る</a>
     {% else %}
     <a href="/quiz" class="btn-primary">次の問題へ</a>
-    <a href="/home" class="btn-secondary">ホームへ</a>
     {% endif %}
   </div>
 </div>
+
+<script>
+(function() {
+  var fill = document.getElementById('xpFill');
+  if (!fill) return;
+  var bar  = fill.parentElement;
+  var card = bar.closest('.xp-progress-card');
+  var target  = {{ progress_after }};
+  var levelUp = {{ 'true' if level_up else 'false' }};
+
+  // チャージ演出: 発光しながら溜まる予感を出す
+  setTimeout(function() {
+    bar.classList.add('charging');
+    setTimeout(function() {
+      bar.classList.remove('charging');
+      bar.classList.add('glowing');
+
+      if (levelUp) {
+        // オーバーシュートで100%へ
+        fill.style.transition = 'width 1.1s cubic-bezier(.2,0,.5,1)';
+        fill.style.width = '100%';
+        setTimeout(function() {
+          fill.classList.add('flash');
+          bar.classList.remove('glowing');
+          setTimeout(function() {
+            fill.classList.remove('flash');
+            fill.style.transition = 'none';
+            fill.style.width = '0%';
+            setTimeout(function() {
+              bar.classList.add('glowing');
+              // 新レベルのバーをオーバーシュートで充填
+              var overshoot = Math.min(target + 6, 100);
+              fill.style.transition = 'width 1s cubic-bezier(.2,0,.5,1)';
+              fill.style.width = overshoot + '%';
+              setTimeout(function() {
+                fill.style.transition = 'width .25s cubic-bezier(.4,0,.2,1)';
+                fill.style.width = target + '%';
+                // 着地エフェクト
+                setTimeout(function() {
+                  fill.classList.add('pop');
+                  if (card) card.classList.add('shake');
+                  setTimeout(function() { fill.classList.remove('pop'); }, 150);
+                  setTimeout(function() { if (card) card.classList.remove('shake'); }, 450);
+                  bar.classList.remove('glowing');
+                  // バナー＋コンフェティ
+                  var banner = document.getElementById('levelUpBanner');
+                  if (banner) banner.classList.add('show');
+                  launchConfetti();
+                }, 300);
+              }, 1050);
+            }, 180);
+          }, 450);
+        }, 1200);
+
+      } else {
+        // 通常：オーバーシュートして着地
+        var overshoot = Math.min(target + 5, 100);
+        fill.style.transition = 'width 1s cubic-bezier(.2,0,.5,1)';
+        fill.style.width = overshoot + '%';
+        setTimeout(function() {
+          fill.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
+          fill.style.width = target + '%';
+          setTimeout(function() {
+            fill.classList.add('pop');
+            if (card) card.classList.add('shake');
+            setTimeout(function() { fill.classList.remove('pop'); }, 150);
+            setTimeout(function() { if (card) card.classList.remove('shake'); bar.classList.remove('glowing'); }, 450);
+          }, 220);
+        }, 1050);
+      }
+    }, 320);
+  }, 350);
+
+  function launchConfetti() {
+    var colors = ['#f6e05e','#68d391','#63b3ed','#fc8181','#b794f4','#f6ad55','#76e4f7','#f687b3'];
+    for (var i = 0; i < 80; i++) {
+      (function() {
+        var el = document.createElement('div');
+        var size = Math.random() * 10 + 6;
+        el.style.cssText =
+          'position:fixed;width:' + size + 'px;height:' + size + 'px;' +
+          'background:' + colors[Math.floor(Math.random() * colors.length)] + ';' +
+          'border-radius:' + (Math.random() > .5 ? '50%' : '3px') + ';' +
+          'left:' + (Math.random() * 100) + 'vw;top:-20px;z-index:9999;pointer-events:none;' +
+          'animation:confettiFall ' + (Math.random() * 1.5 + 1.2) + 's ease-in ' + (Math.random() * .8) + 's forwards;';
+        document.body.appendChild(el);
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+      })();
+    }
+  }
+})();
+</script>
 {% endblock %}
